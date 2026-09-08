@@ -398,3 +398,85 @@ html[data-theme=dark] .ov-kpi,html[data-theme=dark] .ov-card,html[data-theme=dar
  .ov-page-head{margin-inline:6px}.ov-kpis{grid-template-columns:1fr}.ov-kpi{min-height:118px}
  .ov-kpi-top{margin-bottom:11px}.ov-actions{grid-template-columns:1fr}.ov-qa{min-height:54px}
 }
+
+/* ===== Application header redesign: existing typography and behavior retained ===== */
+.dashboard-shell .app-header{
+ top:0!important;padding:10px clamp(14px,2.5vw,34px);background:color-mix(in srgb,var(--dash-bg) 88%,transparent);
+ border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent);backdrop-filter:saturate(1.25) blur(18px);
+ box-shadow:0 8px 28px rgba(28,54,39,.055)
+}
+.dashboard-shell .app-header .header-inner{
+ width:100%;max-width:1440px;min-height:58px;margin:0 auto;padding:7px 8px 7px 10px;gap:10px;flex-wrap:nowrap;
+ background:color-mix(in srgb,var(--dash-surface) 96%,transparent);border:1px solid var(--line);border-radius:17px;
+ box-shadow:0 7px 22px rgba(27,55,39,.045)
+}
+.dashboard-shell .app-header .menu-btn{
+ width:42px;height:42px;border:0;border-radius:12px;background:var(--dash-soft);color:var(--green);box-shadow:none
+}
+.dashboard-shell .app-header .menu-btn:hover{background:var(--green);color:#fff;transform:none}
+.dashboard-shell .app-header .brand{padding:0 12px 0 2px;font-size:17px;border-inline-end:1px solid var(--line)}
+.dashboard-shell .app-header .brand-mark{width:34px;height:36px;border-radius:11px 11px 11px 4px}
+.dashboard-shell .app-header .brand small{font-size:6px;letter-spacing:2.2px}
+.dashboard-shell .global-search{flex:1 1 280px;max-width:520px;background:transparent}
+.dashboard-shell .global-search>input{
+ height:42px;border-color:transparent;border-radius:12px;background:var(--dash-bg);padding-inline-start:39px;
+ transition:border-color .18s,background .18s,box-shadow .18s
+}
+.dashboard-shell .global-search>input:hover{border-color:var(--line)}
+.dashboard-shell .global-search>input:focus{outline:0;border-color:color-mix(in srgb,var(--green) 55%,var(--line));background:var(--dash-surface);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 10%,transparent)}
+.dashboard-shell .global-search>svg{left:14px;color:var(--green)}
+[dir=rtl] .dashboard-shell .global-search>svg{left:auto;right:14px}
+[dir=rtl] .dashboard-shell .global-search>input{padding-inline-start:39px}
+.dashboard-shell .search-results{top:50px;border-radius:15px;box-shadow:0 18px 50px rgba(27,55,39,.16)}
+.dashboard-shell .farm-picker{
+ flex:0 1 270px;max-width:290px;min-width:190px;height:42px;padding:3px 4px 3px 10px;gap:8px;
+ border:1px solid var(--line);border-radius:12px;background:var(--dash-surface);color:var(--green)
+}
+.dashboard-shell .farm-picker>.search-select{flex:1;min-width:0}
+.dashboard-shell .farm-picker .search-select-trigger{height:34px;min-height:34px;padding:5px 8px;border:0;background:transparent;font-size:11px;font-weight:700}
+.dashboard-shell .farm-picker .search-select-trigger svg{width:14px}
+.dashboard-shell .header-actions{
+ flex:0 0 auto;margin-inline-start:0;padding-inline-start:10px;border-inline-start:1px solid var(--line);gap:7px
+}
+.dashboard-shell .header-actions>.language,.dashboard-shell .bell-button{
+ width:40px;height:40px;padding:0;display:grid;place-items:center;border:1px solid transparent;border-radius:11px;background:var(--dash-bg);color:var(--muted)
+}
+.dashboard-shell .header-actions>.language:hover,.dashboard-shell .bell-button:hover{background:var(--dash-soft);color:var(--green)}
+.dashboard-shell .theme-toggle{display:grid;place-items:center}
+.dashboard-shell .lang-switch{height:40px;padding:3px;border:0;border-radius:11px;background:var(--dash-bg)}
+.dashboard-shell .lang-switch button{height:34px;padding:4px 9px;border-radius:8px;font-size:9px}
+.dashboard-shell .lang-switch button.on{box-shadow:0 4px 10px rgba(46,107,78,.2)}
+.dashboard-shell .user-button{
+ min-height:40px;max-width:190px;padding:7px 11px 7px 14px;border:1px solid transparent;border-radius:11px;background:var(--dash-bg)
+}
+.dashboard-shell .user-button .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.dashboard-shell .user-button:hover{background:var(--dash-soft);color:var(--green)}
+.dashboard-shell .bell-badge{top:-4px;right:-4px;box-shadow:0 0 0 2px var(--dash-surface)}
+.dashboard-shell .notif-panel,.dashboard-shell .user-menu-pop{top:49px;border-radius:16px;box-shadow:0 20px 55px rgba(27,55,39,.17)}
+html[data-theme=dark] .dashboard-shell .app-header{background:rgba(7,12,9,.88)}
+html[data-theme=dark] .dashboard-shell .app-header .header-inner{background:rgba(16,26,20,.96);box-shadow:0 9px 30px rgba(0,0,0,.25)}
+html[data-theme=dark] .dashboard-shell .global-search>input,html[data-theme=dark] .dashboard-shell .header-actions>.language,html[data-theme=dark] .dashboard-shell .bell-button,html[data-theme=dark] .dashboard-shell .lang-switch,html[data-theme=dark] .dashboard-shell .user-button{background:#0b120e}
+@media(max-width:1120px){
+ .dashboard-shell .app-header .header-inner{flex-wrap:wrap}
+ .dashboard-shell .global-search{order:5;flex:1 0 100%;max-width:none}
+ .dashboard-shell .search-results{top:49px}
+}
+@media(max-width:760px){
+ .dashboard-shell .app-header{padding:7px 8px}
+ .dashboard-shell .app-header .header-inner{padding:6px;gap:7px;border-radius:14px}
+ .dashboard-shell .app-header .brand{flex:1 1 auto;padding-inline-end:6px;border:0;font-size:15px}
+ .dashboard-shell .app-header .brand-mark{width:30px;height:32px}
+ .dashboard-shell .farm-picker{order:4;flex:1 1 100%;max-width:none;min-width:0}
+ .dashboard-shell .global-search{order:5}
+ .dashboard-shell .header-actions{margin-inline-start:auto;padding-inline-start:0;border:0}
+ .dashboard-shell .lang-switch{display:none}
+ .dashboard-shell .user-button{width:40px;padding:0;justify-content:center}
+ .dashboard-shell .user-button .name{display:none}
+ .dashboard-shell .app-header .menu-btn{width:38px;height:38px}
+}
+@media(max-width:430px){
+ .dashboard-shell .app-header .brand small{display:none}
+ .dashboard-shell .header-actions>.language,.dashboard-shell .bell-button,.dashboard-shell .user-button{width:36px;height:36px}
+ .dashboard-shell .farm-picker{height:40px}
+ .dashboard-shell .global-search>input{height:40px;font-size:12px}
+}
