@@ -1,0 +1,2 @@
+'use client';
+export async function api(url:string,options?:RequestInit){const r=await fetch(url,{...options,headers:{'Content-Type':'application/json',...options?.headers},cache:'no-store'});const data=await r.json();if(!r.ok)throw new Error(data.error||'Request failed');return data;}

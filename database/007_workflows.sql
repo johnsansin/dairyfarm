@@ -1,0 +1,12 @@
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id);
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS role_id uuid;
+ALTER TABLE staff ADD CONSTRAINT staff_role_farm_fk FOREIGN KEY(farm_id,role_id) REFERENCES roles(farm_id,id);
+CREATE UNIQUE INDEX IF NOT EXISTS staff_farm_user_unique ON staff(farm_id,user_id) WHERE user_id IS NOT NULL;
+CREATE TABLE dropdown_options(farm_id uuid NOT NULL REFERENCES farms(id),module text NOT NULL,field text NOT NULL,values jsonb NOT NULL,PRIMARY KEY(farm_id,module,field));
+CREATE TABLE stock_movements(id uuid PRIMARY KEY,farm_id uuid NOT NULL,item_id uuid NOT NULL,date date NOT NULL,quantity numeric(18,3) NOT NULL CHECK(quantity<>0),value numeric(18,6) NOT NULL,reason text NOT NULL,record_module text,record_id uuid,created_at timestamptz NOT NULL DEFAULT now(),user_id uuid NOT NULL REFERENCES users(id),FOREIGN KEY(farm_id,item_id) REFERENCES inventory(farm_id,id),UNIQUE(farm_id,id));
+CREATE INDEX stock_record_idx ON stock_movements(farm_id,record_module,record_id);
+ALTER TABLE health ADD COLUMN stock_items jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE vaccinations ADD COLUMN stock_items jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS event_key text;
+CREATE UNIQUE INDEX notifications_event_unique ON notifications(farm_id,user_id,event_key) WHERE event_key IS NOT NULL;

@@ -1,0 +1,11 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {api} from './api';
+import SearchSelect from './search-select';
+export default function DropdownSettings({base,readOnly}:{base:string;readOnly:boolean}){
+ const [rows,setRows]=useState<any[]>([]),[key,setKey]=useState(''),[extra,setExtra]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ useEffect(()=>{api(base+'/dropdowns').then(setRows).catch(e=>setError(e.message))},[base]);
+ const current=rows.find(r=>r.module+'.'+r.field===key);
+ async function save(values:string[]){setBusy(true);setError('');try{await api(base+'/dropdowns/'+current.module+'/'+current.field,{method:'PUT',body:JSON.stringify({values})});setRows(r=>r.map(x=>x===current?{...x,values}:x));setExtra('')}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ return <section className="workspace-panel"><h3>Application dropdowns</h3><p>Manage additional choices for record dropdowns. Built-in workflow states are retained. Animal, staff, stock, account and farm lists come from their corresponding records; roles are managed in Roles & permissions.</p><label className="form-field">Dropdown<SearchSelect value={key} onChange={e=>{setKey(e.target.value);setError('')}}><option value="">Select dropdown</option>{rows.map(r=><option key={r.module+'.'+r.field} value={r.module+'.'+r.field}>{r.moduleName} — {r.name}</option>)}</SearchSelect></label>{current&&<><div className="records-table-wrap"><table className="records-table"><thead><tr><th>Choice</th><th>Type</th><th>Action</th></tr></thead><tbody>{current.values.map((v:string)=><tr key={v}><td>{v}</td><td>{current.defaults.includes(v)?'Built-in':'Custom'}</td><td>{!readOnly&&!current.defaults.includes(v)&&<button className="row-action" disabled={busy} onClick={()=>save(current.values.filter((x:string)=>x!==v))}>Remove choice</button>}</td></tr>)}</tbody></table></div>{!readOnly&&<form onSubmit={e=>{e.preventDefault();void save([...current.values,extra.trim()])}}><label className="form-field">New choice<input value={extra} onChange={e=>setExtra(e.target.value)} required maxLength={100}/></label><button className="button small" disabled={busy}>Add choice</button></form>}</>}{error&&<p className="form-error" role="alert">{error}</p>}</section>
+}

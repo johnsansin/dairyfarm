@@ -1,0 +1,2 @@
+import PublicShell from './public-shell';
+export default function MarketingPage({eyebrow,title,intro,items}:{eyebrow:string;title:string;intro:string;items:{title:string;text:string}[]}){return <PublicShell><section className="marketing-hero container"><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{intro}</p></section><section className="container marketing-grid">{items.map(x=><article key={x.title}><h2>{x.title}</h2><p>{x.text}</p></article>)}</section></PublicShell>}

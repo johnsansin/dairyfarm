@@ -1,0 +1,4 @@
+'use client';
+import Link from 'next/link';
+import {useEffect,useState} from 'react';
+export default function CookieConsent(){const [show,setShow]=useState(false);useEffect(()=>setShow(!localStorage.getItem('dm-cookie-choice')),[]);if(!show)return null;function choose(v:string){localStorage.setItem('dm-cookie-choice',v);setShow(false)}return <aside className="cookie-banner" role="dialog" aria-label="Cookie preferences"><div><strong>Cookie preferences</strong><p>We use essential cookies for secure sign-in. You can also accept optional experience cookies.</p><Link href="/cookies">Read cookie policy</Link></div><div><button className="secondary-button" onClick={()=>choose('essential')}>Essential only</button><button className="button small" onClick={()=>choose('all')}>Accept all</button></div></aside>}

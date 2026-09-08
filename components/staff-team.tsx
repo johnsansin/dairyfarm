@@ -1,0 +1,17 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {api} from './api';
+import SearchSelect from './search-select';
+
+export default function StaffTeam({base,readOnly,ur}:{base:string;readOnly:boolean;ur:boolean}){
+ const [staff,setStaff]=useState<any[]>([]),[roles,setRoles]=useState<any[]>([]),[selected,setSelected]=useState(''),[view,setView]=useState<any>(null),[role,setRole]=useState(''),[email,setEmail]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ async function load(){try{const [s,r]=await Promise.all([api(base+'/team/staff'),api(base+'/roles')]);setStaff(s);setRoles(r.roles.filter((x:any)=>!x.is_system));setError('')}catch(e){setError((e as Error).message)}}
+ useEffect(()=>{void load()},[base]);const current=staff.find(s=>s.id===selected);
+ return <section className="workspace-panel staff-picker-panel">
+  <div className="staff-picker-row"><SearchSelect value={selected} onChange={e=>setSelected(e.target.value)}><option value="">{ur?'عملہ منتخب کریں':'Select staff to assign application access'}</option>{staff.map(s=><option key={s.id} value={s.id}>{s.name}{s.position?` · ${s.position}`:''}</option>)}</SearchSelect>{current&&<><button className="secondary-button" onClick={()=>setView(current)}>{ur?'تفصیل':'Details'}</button>{!readOnly&&<button className="button small" onClick={()=>{setRole(current.role_id||'');setEmail(current.account_email||'')}}>{ur?'صارف شامل کریں':'Add user / role'}</button>}</>}</div>
+  {error&&<div className="form-error" role="alert">{error}</div>}
+  {!staff.length&&<p className="search-note">{ur?'پہلے عملہ مینو سے ریکارڈ شامل کریں۔':'Add staff records from the Staff menu first.'}</p>}
+  {view&&<div className="modal-backdrop"><section className="record-modal" role="dialog" aria-modal="true"><div className="modal-heading"><h2>{view.name}</h2><button className="row-action" onClick={()=>setView(null)}>Close</button></div>{view.photo&&<img className="photo-thumb" src={view.photo} alt={view.name}/>}<dl className="detail-grid">{[['position','Designation'],['phone','Phone'],['joining_date','Joining date'],['status','Status'],['role_name','Role'],['account_email','Account email'],['notes','Notes']].map(([k,n])=><div key={k}><dt>{n}</dt><dd>{String(view[k]??'—')}</dd></div>)}</dl></section></div>}
+  {current&&!readOnly&&(role!==''||email!==''||current.role_id==null)&&<div className="modal-backdrop"><form className="record-modal" onSubmit={async e=>{e.preventDefault();setBusy(true);try{await api(base+'/team/staff/'+current.id,{method:'PUT',body:JSON.stringify({roleId:role||null,email})});setSelected('');setRole('');setEmail('');await load()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}}><h2>{ur?'صارف اور کردار تفویض کریں':'Assign user & role'} — {current.name}</h2><label className="form-field">Role<SearchSelect value={role} onChange={e=>setRole(e.target.value)}><option value="">Viewer / no custom role</option>{roles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</SearchSelect></label><label className="form-field">Registered email<input type="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><div className="modal-footer"><button type="button" className="secondary-button" onClick={()=>{setRole('');setEmail('');setSelected('')}}>Cancel</button><button className="button" disabled={busy}>Save assignment</button></div></form></div>}
+ </section>
+}
