@@ -61,7 +61,7 @@ Express 5 API (server/)  — owns ALL auth, validation (zod), permissions, DB
         ▼
 PostgreSQL 17
         ├─ multi-tenancy: farms = tenant boundary, farm_members RBAC
-        ├─ operational modules (shared/modules.ts → generated SQL)
+        ├─ operational modules (backend/shared/modules.ts → generated SQL)
         ├─ audit_logs, optimistic-locking version columns
         └─ (planned) stock_movements, invoices, ledger, notifications, etc.
 ```
@@ -71,7 +71,7 @@ PostgreSQL 17
 - **Backend:** Express owns request validation, authorization, business rules and
   all SQL. Single REST API surface for both the web app and the PWA/mobile client.
 - **Database:** PostgreSQL is authoritative. Schema generated from a single
-  TypeScript source of truth (`shared/modules.ts`) via `scripts/generate-schema.ts`.
+  TypeScript source of truth (`backend/shared/modules.ts`) via `backend/scripts/generate-schema.ts`.
 - **Auth:** DB-backed opaque HttpOnly cookie sessions (SHA-256-hashed tokens), not JWTs.
 - **Tenant:** `farms` is the tenant. Every query is farm-scoped with membership
   verification (application-level isolation; RLS added in production hardening).
@@ -126,9 +126,9 @@ codebase (2026-09-07).
 | 27 | API documentation | ⏳ planned | 11 |
 
 > **Prisma note:** The decision is to keep the current `pg` driver + generated-SQL
-> migration system (single source of truth `shared/modules.ts`) rather than adopt
-> Prisma. All "migrations" remain explicit `.sql` files under `database/`, applied by
-> `server/migrate.ts` with advisory locking. This preserves the verified testable
+> migration system (single source of truth `backend/shared/modules.ts`) rather than adopt
+> Prisma. All "migrations" remain explicit `.sql` files under `backend/database/`, applied by
+> `backend/src/migrate.ts` with advisory locking. This preserves the verified testable
 > foundation and avoids a disruptive rewrite.
 
 ---
@@ -148,7 +148,7 @@ codebase (2026-09-07).
 
 **Acceptance / tests:**
 - [ ] Unit tests (validation) pass.
-- [ ] API integration (`scripts/verify-api.ts`) passes: register, login, logout,
+- [ ] API integration (`backend/scripts/verify-api.ts`) passes: register, login, logout,
       session revocation, farm creation, tenant isolation, origin enforcement,
       validation, audit logging, OWNER membership.
 - [ ] E2E (Playwright): public site + RTL toggle; full register → farm → isolate →
@@ -338,7 +338,7 @@ drill verified, security review passed.
 ## 6. Testing strategy
 
 - **Unit** (Node built-in runner + `tsx --test`): validation, sqlite-free logic.
-- **Integration** (`scripts/verify-api.ts`): real HTTP + real DB assertions.
+- **Integration** (`backend/scripts/verify-api.ts`): real HTTP + real DB assertions.
 - **E2E** (Playwright): public site, auth, tenant isolation, LAN-specific flows.
 - **Per-phase:** a dedicated spec + entry gate as defined in each phase.
 

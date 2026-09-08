@@ -29,7 +29,7 @@ The master specification (`MASTER_SPEC.md`) remains the acceptance target. Phase
 
 Status: **backend + frontend implemented, typecheck/build/tests green.**
 
-### Backend (`server/modules/app.ts`, `server/index.ts`, migrations 003–005)
+### Backend (`backend/src/modules/app.ts`, `backend/src/index.ts`, migrations 003–005)
 - Notifications: list (with unread count), mark single read, mark-all read.
 - Roles & permissions: GET/POST/PUT `/roles` (custom roles, per-module `none/read/write`; system roles read-only).
 - Team: GET/POST `/team` (add an existing user by email as OWNER or VIEWER; sends a notification to the invitee).
@@ -67,7 +67,7 @@ Status: **complete / verified** for the account + farm foundation slice.
 
 - Master spec written (`docs/MASTER_SPEC.md`, all 12 phases + deliverables checklist).
 - Unit tests: 4/4 passing (`npm run test`).
-- API integration (`scripts/verify-api.ts`): PASS — registration, login, logout,
+- API integration (`backend/scripts/verify-api.ts`): PASS — registration, login, logout,
   session revocation, farm creation, tenant isolation, origin enforcement,
   validation, audit logging, OWNER membership integrity.
 - Typecheck: clean (`npm run typecheck`).
@@ -90,7 +90,7 @@ testing. These are Phase 12 / later-phase items, not Phase 1 blockers.
 5. Staff, partners, team access, operational reports and farm insights.
 6. Advanced payroll, distributions, automated notifications, offline sync, provider-backed AI, subscriptions and production operations.
 
-Each stage must pass database/API checks before completion. Provider-dependent features must explain their configuration requirements. Nothing is complete merely because a menu item exists.
+Each stage must pass backend/database/API checks before completion. Provider-dependent features must explain their configuration requirements. Nothing is complete merely because a menu item exists.
 
 ## Data and permissions
 All operational records have UUID identifiers, farm_id, created_at and version. Record updates check versions to reject lost updates. Composite foreign keys prevent cross-farm animal/contact references. Current OWNER membership permits writes; VIEWER permits reads. Audits store record identifiers and previous/new values. Immutable financial transactions require reversing entries rather than editing. Business calculations run in PostgreSQL NUMERIC, not frontend floating-point arithmetic.

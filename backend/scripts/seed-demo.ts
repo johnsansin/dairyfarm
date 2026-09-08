@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import {db} from '../server/db';
+import {db} from '../src/db';
 import {randomUUID} from 'node:crypto';
 import {hash} from 'bcryptjs';
 

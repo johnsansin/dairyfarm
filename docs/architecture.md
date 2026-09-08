@@ -4,7 +4,7 @@
 Phase 1: bilingual public website, authentication, tenant foundation, farm onboarding, protected dashboard. Phase 2: herd and lactations. Phase 3: milk records. Subsequent phases: health/breeding; inventory/feed; buyers/finance; staff/partners; reports; offline synchronization; AI; subscriptions/admin. Every phase requires integration verification before completion. Unimplemented modules remain explicitly planned.
 
 ## Boundaries
-Next.js renders the interface. A separate Node.js Express API owns validation, authentication, permissions, and database access. Express is used for the initial small API; domain services must remain separate as modules expand. PostgreSQL is authoritative. The browser accesses the API through a same-origin /api proxy. Database-backed opaque sessions use HttpOnly cookies; this initial first-party web application does not need browser-stored JWTs. Future mobile clients may add scoped token authentication.
+The isolated `frontend/` Next.js application renders the interface. The isolated `backend/` Express application owns validation, authentication, permissions, and database access. Each has its own manifest, lockfile, TypeScript configuration, environment, and build lifecycle. PostgreSQL is authoritative. The browser accesses the API through a same-origin /api proxy. Database-backed opaque sessions use HttpOnly cookies; this initial first-party web application does not need browser-stored JWTs. Future mobile clients may add scoped token authentication.
 
 ## Tenant model and ERD
 ```mermaid

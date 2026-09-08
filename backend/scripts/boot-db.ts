@@ -1,7 +1,7 @@
 import EmbeddedPostgres from 'embedded-postgres';
 import {existsSync} from 'node:fs';
 import {readFile} from 'node:fs/promises';
-import {db} from '../server/db';
+import {db} from '../src/db';
 
 async function applyMigrations(){
  const client=await db.connect();
