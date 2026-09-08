@@ -320,3 +320,81 @@ html[data-theme=dark] .search-select-panel input{background:#17251d;color:#e5f0e
 .copilot-message{max-width:88%;padding:10px 12px;border-radius:12px;font-size:12px;line-height:1.55}.copilot-message.user{align-self:flex-end;background:var(--green);color:#fff}.copilot-message.assistant{align-self:flex-start;background:var(--primary-soft);color:var(--ink)}
 .copilot-form{display:grid;grid-template-columns:1fr auto;gap:8px}.copilot-form input{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);padding:10px 12px}.copilot-note{color:var(--muted);margin-top:9px;line-height:1.4}
 @media(max-width:560px){.farm-copilot{right:12px;bottom:12px}.copilot-panel{max-height:calc(100dvh - 85px)}.copilot-launch span{display:none}.copilot-launch{width:50px;height:50px;padding:0;justify-content:center}}
+
+/* ===== Farm overview redesign: typography remains inherited ===== */
+.dashboard-shell .workspace-main{max-width:1440px;padding:28px clamp(18px,3vw,44px) 54px}
+.ov-page{display:grid;gap:22px}
+.dashboard-shell .ov-banner{
+ min-height:210px;margin:0;border-radius:24px;padding:34px clamp(24px,4vw,52px) 76px;
+ background:
+  radial-gradient(circle at 88% 20%,rgba(255,255,255,.18) 0 8%,transparent 8.5%),
+  radial-gradient(circle at 82% 78%,rgba(255,255,255,.10) 0 18%,transparent 18.5%),
+  linear-gradient(125deg,#234f3b 0%,#2e6b4e 48%,#4c9871 100%);
+ box-shadow:0 24px 55px rgba(35,79,59,.18)
+}
+.dashboard-shell .ov-banner::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0 62%,rgba(255,255,255,.04) 62% 63%,transparent 63%);pointer-events:none}
+.dashboard-shell .ov-banner::after{width:340px;height:340px;inset-inline-end:-90px;top:-150px;border:1px solid rgba(255,255,255,.14);background:transparent}
+.ov-banner-text{max-width:720px}
+.ov-banner-text .k{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;opacity:.78}
+.ov-banner-text .v{font-size:clamp(20px,2.3vw,32px);line-height:1.3;font-weight:700;max-width:780px}
+.ov-page-head{
+ position:relative;z-index:2;margin:-64px 24px 0;padding:22px 24px;
+ background:color-mix(in srgb,var(--dash-surface) 94%,transparent);border:1px solid color-mix(in srgb,var(--line) 72%,transparent);
+ border-radius:18px;box-shadow:0 16px 40px rgba(27,55,39,.10);backdrop-filter:blur(14px)
+}
+.ov-title{font-size:clamp(21px,2vw,28px);font-weight:800;letter-spacing:-.035em}
+.ov-sub{max-width:650px;margin-top:4px}
+.ov-btn{min-height:46px;padding:12px 20px;border-radius:12px;font-weight:700;box-shadow:0 10px 24px rgba(46,107,78,.24)}
+.ov-kpis{gap:16px;margin:0}
+.ov-kpi{
+ position:relative;min-height:156px;padding:20px 21px;border-radius:18px;overflow:hidden;
+ box-shadow:0 8px 24px rgba(27,55,39,.045);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease
+}
+.ov-kpi::after{content:'';position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--green),#59a47d);opacity:.8}
+.ov-kpi:nth-child(3)::after{background:linear-gradient(90deg,#c98a2e,#e5b963)}
+.ov-kpi:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--green) 38%,var(--line));box-shadow:0 16px 34px rgba(27,55,39,.09)}
+.ov-kpi-top{margin-bottom:22px;font-size:12px;font-weight:700}
+.ov-kpi-icon{width:38px;height:38px;border-radius:11px}
+.ov-kpi-value{font-size:clamp(27px,2.4vw,36px);line-height:1;font-weight:800;letter-spacing:-.045em}
+.ov-kpi-value .unit{font-size:14px;font-weight:700}
+.ov-delta{display:inline-flex;margin-top:10px;padding:4px 8px;border-radius:999px;background:var(--dash-soft);font-size:10px;font-weight:700}
+.ov-delta.down{background:color-mix(in srgb,var(--danger) 10%,transparent)}
+.ov-grid{grid-template-columns:minmax(0,1.72fr) minmax(310px,.8fr);gap:18px}
+.ov-card{padding:24px;border-radius:20px;box-shadow:0 10px 28px rgba(27,55,39,.045)}
+.ov-card-head{padding-bottom:14px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.ov-card-title{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.ov-chart{max-height:360px;padding:6px 8px 2px 0}
+.ov-bar{grid-template-columns:50px minmax(0,1fr) 74px;gap:14px;padding:9px 0}
+.ov-track{height:11px;background:color-mix(in srgb,var(--dash-soft) 55%,var(--dash-bg));border-radius:999px}
+.ov-fill{box-shadow:inset 0 0 0 1px rgba(255,255,255,.13)}
+.ov-date,.ov-val,.ov-rem-date{font-variant-numeric:tabular-nums;font-size:11px}
+.ov-val{font-weight:700}
+.ov-reminder{position:relative;padding:15px 10px 15px 18px;border-radius:11px;border-bottom:0}
+.ov-reminder+.ov-reminder{margin-top:5px}
+.ov-reminder:hover{background:var(--dash-bg)}
+.ov-reminder::before{content:'';position:absolute;inset:9px auto 9px 0;width:3px;border-radius:4px;background:#c98a2e}
+.ov-reminder:has(.urgent)::before{background:var(--danger)}
+.ov-dot{display:none}
+.ov-rem-title{font-weight:700;font-size:12px}
+.ov-actions{gap:14px;margin-top:0}
+.ov-qa{min-height:64px;padding:15px 17px;border-radius:14px;font-weight:700;box-shadow:0 7px 20px rgba(27,55,39,.035)}
+.ov-qa svg{width:28px;height:28px;padding:6px;border-radius:8px;background:var(--dash-soft)}
+.ov-qa:hover{transform:translateY(-2px);background:var(--dash-surface);box-shadow:0 12px 28px rgba(27,55,39,.08)}
+html[data-theme=dark] .ov-page-head{background:rgba(16,26,20,.94);box-shadow:0 16px 40px rgba(0,0,0,.24)}
+html[data-theme=dark] .ov-kpi,html[data-theme=dark] .ov-card,html[data-theme=dark] .ov-qa{box-shadow:none}
+@media(max-width:1200px){.ov-grid{grid-template-columns:minmax(0,1.45fr) minmax(290px,.8fr)}}
+@media(max-width:980px){.ov-grid{grid-template-columns:1fr}.dashboard-shell .ov-banner{min-height:190px}.ov-page-head{margin-top:-58px}}
+@media(max-width:720px){
+ .dashboard-shell .workspace-main{padding:14px 12px 34px}.ov-page{gap:14px}
+ .dashboard-shell .ov-banner{min-height:176px;padding:24px 20px 68px;border-radius:18px}
+ .ov-banner-text .v{font-size:20px}.ov-page-head{margin:-54px 10px 0;padding:17px;border-radius:15px}
+ .ov-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ov-kpi{min-height:136px;padding:16px}
+ .ov-kpi-top{align-items:center;margin-bottom:16px}.ov-kpi-icon{width:34px;height:34px}.ov-kpi-value{font-size:27px}
+ .ov-card{padding:17px;border-radius:16px}.ov-chart{padding-right:0}.ov-bar{grid-template-columns:42px minmax(0,1fr) 62px;gap:8px}
+ .ov-actions{grid-template-columns:1fr 1fr;gap:9px}.ov-qa{min-height:58px;padding:12px}
+}
+@media(max-width:420px){
+ .dashboard-shell .ov-banner{min-height:165px}.ov-banner-text .k{font-size:10px}.ov-banner-text .v{font-size:18px}
+ .ov-page-head{margin-inline:6px}.ov-kpis{grid-template-columns:1fr}.ov-kpi{min-height:118px}
+ .ov-kpi-top{margin-bottom:11px}.ov-actions{grid-template-columns:1fr}.ov-qa{min-height:54px}
+}
