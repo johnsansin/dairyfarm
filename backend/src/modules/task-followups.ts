@@ -1,0 +1,10 @@
+import {Router} from 'express';
+import {randomUUID} from 'node:crypto';
+import {z} from 'zod';
+import {db} from '../db';
+import {accessFor,canAccess} from './access';
+import {DomainError} from './operations';
+export const taskFollowups=Router({mergeParams:true});
+taskFollowups.use(async(req,res,next)=>{const farm=String(req.params.farmId);if(!z.uuid().safeParse(farm).success)throw new DomainError(404,'Farm not found');const member=await accessFor(farm,res.locals.user.id);if(!member)throw new DomainError(404,'Farm not found');if(!canAccess(member,'tasks',!['GET','HEAD'].includes(req.method)))throw new DomainError(403,'Task access is required');res.locals.farm={id:farm,...member};next()});
+taskFollowups.get('/calendar/tasks/:taskId/followups',async(req,res)=>{const task=z.uuid().parse(req.params.taskId),farm=res.locals.farm.id;if(!(await db.query('SELECT 1 FROM tasks WHERE farm_id=$1 AND id=$2',[farm,task])).rowCount)throw new DomainError(404,'Task not found');const {rows}=await db.query('SELECT f.*,u.name AS author FROM task_followups f JOIN users u ON u.id=f.created_by WHERE f.farm_id=$1 AND f.task_id=$2 ORDER BY f.follow_up_date DESC,f.created_at DESC',[farm,task]);res.json(rows)});
+taskFollowups.post('/calendar/tasks/:taskId/followups',async(req,res)=>{const task=z.uuid().parse(req.params.taskId),farm=res.locals.farm.id,input=z.object({follow_up_date:z.iso.date(),status:z.enum(['Pending','In progress','Resolved','Needs another follow-up']),notes:z.string().trim().min(2).max(4000)}).parse(req.body);if(!(await db.query('SELECT 1 FROM tasks WHERE farm_id=$1 AND id=$2',[farm,task])).rowCount)throw new DomainError(404,'Task not found');const id=randomUUID();const {rows}=await db.query('INSERT INTO task_followups(id,farm_id,task_id,follow_up_date,status,notes,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[id,farm,task,input.follow_up_date,input.status,input.notes,res.locals.user.id]);await db.query('INSERT INTO audit_logs(id,farm_id,user_id,action,record_id,new_value) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),farm,res.locals.user.id,'task.followup_created',task,JSON.stringify(rows[0])]);res.status(201).json(rows[0])});

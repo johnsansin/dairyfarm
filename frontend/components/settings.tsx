@@ -1,5 +1,5 @@
 'use client';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 import StaffTeam from './staff-team';
 import DropdownSettings from './dropdown-settings';
 const timezones=Array.from(new Set(['UTC','Asia/Karachi',...Intl.supportedValuesOf('timeZone')]));

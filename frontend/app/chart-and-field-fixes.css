@@ -1,0 +1,20 @@
+/* Clear, modern milk chart: high contrast without the previous tilted surface. */
+.milk-chart-card{min-height:390px;background:linear-gradient(145deg,#fff,#f8fbf8);border:1px solid rgba(46,107,78,.14);box-shadow:0 16px 38px rgba(35,79,59,.10);transform:none;perspective:none}
+.milk-chart-card:hover{transform:translateY(-2px);box-shadow:0 22px 46px rgba(35,79,59,.13)}
+.milk-chart-card::before{display:none}.milk-chart-card::after{width:180px;height:180px;right:-85px;top:-90px;background:rgba(201,138,46,.055);border:1px solid rgba(201,138,46,.1);box-shadow:none}
+.milk-chart-card .line-chart{margin:12px 0 0;padding:28px 18px 14px;min-height:276px;border:0;border-radius:18px;background:linear-gradient(145deg,#173b2b 0%,#24573f 58%,#2e6b4e 100%);box-shadow:0 16px 30px rgba(31,78,56,.22),inset 0 1px 0 rgba(255,255,255,.1);transform:none}
+.milk-chart-card .line-chart::before{background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),rgba(255,255,255,.045) 10%)}
+.milk-chart-card .line-chart::after{display:none}.milk-chart-card .line-chart svg{height:205px;filter:drop-shadow(0 7px 5px rgba(0,0,0,.18))}
+.milk-chart-card .chart-gridline{stroke:rgba(255,255,255,.14);stroke-dasharray:3 6}.milk-chart-card .milk-line{stroke:#a9e0bc;stroke-width:4;filter:drop-shadow(0 0 6px rgba(169,224,188,.32))}.milk-chart-card .chart-point{fill:#24573f;stroke:#d8f3e1;stroke-width:2.4}.milk-chart-card .peak-point{fill:#f1b652;stroke:#fff;stroke-width:2.5}.milk-chart-card .chart-labels{color:#d8e9de}.milk-chart-card .peak-label{top:8px;right:12px;background:#f4bd5c;color:#173b2b;box-shadow:0 7px 16px rgba(0,0,0,.2)}
+html[data-theme=dark] .milk-chart-card{background:linear-gradient(145deg,#131f18,#0f1813);border-color:#294132}html[data-theme=dark] .milk-chart-card .line-chart{background:linear-gradient(145deg,#102c20,#1b4934 58%,#245d42)}
+
+/* Form controls always begin at the left edge; the chevron stays on the right. */
+.form-field,.form-field input,.form-field textarea,.search-select,.search-select-trigger,.search-select-value,.search-select-panel,.search-select-panel input,.search-select-panel [role=option]{text-align:left!important}
+.search-select-value{margin-left:0!important;margin-right:auto!important;direction:ltr;max-width:calc(100% - 26px)}
+.search-select-trigger{padding-left:13px!important;padding-right:42px!important;direction:ltr!important}
+.search-select-chevron,[dir=rtl] .search-select-chevron{left:auto!important;right:13px!important}
+.search-select-search{direction:ltr}.search-select-panel [role=option]{direction:ltr}
+[dir=rtl] .form-field{align-items:stretch}.form-field input,.form-field textarea{direction:ltr}
+@media(max-width:720px){.milk-chart-card{min-height:340px}.milk-chart-card .line-chart{min-height:226px;padding:25px 9px 11px}.milk-chart-card .line-chart svg{height:165px}}
+@media(max-width:430px){.milk-chart-card{min-height:310px}.milk-chart-card .line-chart{min-height:205px;padding-inline:6px}.milk-chart-card .line-chart svg{height:148px}.milk-chart-card .peak-label{right:7px}}
+@media(prefers-reduced-motion:reduce){.milk-chart-card:hover{transform:none}}

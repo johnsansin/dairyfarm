@@ -1,5 +1,5 @@
 'use client';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 import {useState} from 'react';
 import {Building2,Plus,MapPin,Pencil} from 'lucide-react';
 import {api} from './api';

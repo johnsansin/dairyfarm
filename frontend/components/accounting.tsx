@@ -1,5 +1,5 @@
 'use client';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 import {useEffect,useState,useCallback} from 'react';
 import {Plus,Download,FileText,BookOpenText,ListChecks,BookMinus,Banknote} from 'lucide-react';
 import {api} from './api';

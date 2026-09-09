@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import {api} from './api';
 import {modules} from '../shared/modules';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 const escape=(v:unknown)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export default function Reports({base,ur}:{base:string;ur:boolean}){
  const [module,setModule]=useState('animals'),[from,setFrom]=useState(''),[to,setTo]=useState(''),[search,setSearch]=useState(''),[animal,setAnimal]=useState(''),[status,setStatus]=useState(''),[page,setPage]=useState(1);

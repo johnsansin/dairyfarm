@@ -1,0 +1,15 @@
+/* The grouped farm navigation is an on-demand drawer on every viewport. */
+.dashboard-shell.has-farm.nav-open{padding-inline-start:0!important}
+.dashboard-shell.nav-open .header-inner>.brand{display:flex!important}
+.dashboard-shell .menu-btn{display:grid!important;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:10px;background:var(--dash-surface);border:1px solid var(--line);color:var(--ink)}
+.dashboard-shell .menu-btn:hover{background:var(--dash-soft);color:var(--green);transform:translateY(-1px)}
+.dashboard-shell .farm-sidebar{box-shadow:10px 0 36px rgba(20,26,18,.16)!important}
+.dashboard-shell .sidebar-close{display:grid!important}
+.dashboard-shell .farm-app.menu-open .farm-menu-overlay{display:block!important;position:fixed;inset:0;z-index:105;background:rgba(20,26,18,.42);border:0;backdrop-filter:blur(2px)}
+.dashboard-shell .sidebar-group{padding-bottom:5px;border-bottom:1px solid color-mix(in srgb,var(--line) 66%,transparent)}
+.dashboard-shell .sidebar-group:last-child{border-bottom:0}
+.dashboard-shell .sidebar-group>button{margin:2px 0;transition:background .16s ease,color .16s ease,transform .16s ease}
+.dashboard-shell .sidebar-group>button:hover{transform:translateX(2px)}
+[dir=rtl] .dashboard-shell .sidebar-group>button:hover{transform:translateX(-2px)}
+@media(max-width:720px){.dashboard-shell .menu-btn{width:36px;height:36px;flex-basis:36px}.dashboard-shell .farm-sidebar{width:min(290px,88vw)}}
+@media(prefers-reduced-motion:reduce){.dashboard-shell .sidebar-group>button{transition:none}}

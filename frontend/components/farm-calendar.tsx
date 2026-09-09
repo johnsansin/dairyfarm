@@ -2,7 +2,7 @@
 import {ChevronLeft,ChevronRight,GripVertical,Pencil} from 'lucide-react';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {api} from './api';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 
 type EventRow={id:string;date:string;title:string;type:string;priority?:string;status?:string};
 type View='today'|'week'|'month'|'year';
