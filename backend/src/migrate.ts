@@ -12,6 +12,6 @@ export async function migrate(){
   await client.query('COMMIT');
  }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();await db.end();}
 }
-if(process.argv[1]&&process.argv[1].endsWith('migrate.ts')){
+if(process.argv[1]&&/\bmigrate\.(ts|js)$/.test(process.argv[1])){
  migrate().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});
 }

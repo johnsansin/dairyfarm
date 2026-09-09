@@ -336,3 +336,9 @@ html[data-theme="dark"] .sidebar-caption,html[data-theme="dark"] .sidebar-group 
 @media(max-width:1100px){.dashboard-shell .workspace-main{max-width:none}}
 @media(max-width:900px){.dashboard-shell .workspace-main{padding-inline:12px}}
 @media(max-width:480px){.dashboard-shell .workspace-main{padding-inline:6px}.live-stats{grid-template-columns:1fr 1fr}.detail-grid{grid-template-columns:1fr}}
+
+@media(max-width:520px){
+ .site-header .header-actions .signin-link{display:inline-flex}
+ .site-header .header-actions .button.small{padding:9px 10px;font-size:10px;gap:5px}
+ .site-header .header-actions{gap:6px}
+}

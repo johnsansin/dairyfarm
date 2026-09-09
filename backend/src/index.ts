@@ -12,6 +12,7 @@ import {appRouter} from './modules/app';
 import { registration, login, farmInput, organizationInput } from './validation';
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 app.use(helmet(),express.json({limit:'3mb'}),cookieParser());
 const origin = process.env.APP_ORIGIN || 'http://localhost:3000';
 app.use((req,res,next)=>{
@@ -53,7 +54,7 @@ app.post('/api/v1/auth/register',authLimit,async(req,res)=>{
  const passwordHash=await hash(input.password,12);const token=randomBytes(32).toString('hex');const client=await db.connect();
  try{await client.query('BEGIN');
   try{await client.query('INSERT INTO users(id,name,email,password_hash) VALUES($1,$2,$3,$4)',[id,input.name,input.email,passwordHash]);}
-  catch(e){await client.query('ROLLBACK');client.release();if((e as {code:string}).code==='23505'){res.status(409).json({error:'Unable to create account with this email. Try signing in.'});return;}throw e;}
+  catch(e){await client.query('ROLLBACK');if((e as {code:string}).code==='23505'){res.status(409).json({error:'Unable to create account with this email. Try signing in.'});return;}throw e;}
   await client.query("INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",[digest(token),id]);
   await createOrganization(client,id,`${input.name}'s workspace`);
   await client.query('COMMIT');
@@ -162,4 +163,4 @@ app.use((err:unknown,_req:Request,res:Response,_next:NextFunction)=>{
  res.status(503).json({error:'Service temporarily unavailable. Please try again shortly.'});
 });
 if(!process.env.DATABASE_URL)console.warn('DATABASE_URL is missing. Configure PostgreSQL to enable accounts and farms.');
-app.listen(Number(process.env.API_PORT)||4000,'127.0.0.1',()=>console.log('DairyMonitor API ready'));
+app.listen(Number(process.env.API_PORT)||4000,'0.0.0.0',()=>console.log('DairyMonitor API ready'));
