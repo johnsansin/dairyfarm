@@ -4,7 +4,7 @@ import StaffTeam from './staff-team';
 import DropdownSettings from './dropdown-settings';
 const timezones=Array.from(new Set(['UTC','Asia/Karachi',...Intl.supportedValuesOf('timeZone')]));
 import {useEffect,useState,useCallback} from 'react';
-import {Plus,Users2,ShieldCheck,UserPlus,Settings2} from 'lucide-react';
+import {Plus,Users2,ShieldCheck,UserPlus,Settings2,Search,ChevronRight,ArrowLeft,ListChecks,Building2,Save,CheckCircle2,Mail,Pencil,X,PlugZap,Send} from 'lucide-react';
 import {api} from './api';
 import {modules as appModules} from '../shared/modules';
 type Row=Record<string,string|number|boolean|null>;
@@ -16,43 +16,58 @@ const modules=[...appModules,{key:'settings',en:'Settings',ur:'ترتیبات',s
 const permissionModules=modules;
 const defaultFarmSettings={timezone:'Asia/Karachi',language:'English + Urdu',briefingTime:'06:00',notificationChannel:'Dashboard',offlineMode:'Enabled',notes:'',smtpHost:'',smtpPort:'587',smtpSecurity:'STARTTLS',smtpUsername:'',smtpPassword:'',smtpFromName:'DairyMonitor',smtpFromEmail:'',smtpEnabled:'Disabled'};
 export default function AppSettings({base,ur,readOnly,management}:{base:string;ur:boolean;readOnly:boolean;management?:React.ReactNode}){
- const [tab,setTab]=useState<'roles'|'team'|'farm'|'workspace'|'dropdowns'>('roles');
+ type SettingsTab='roles'|'team'|'farm'|'workspace'|'dropdowns';
+ const [tab,setTab]=useState<SettingsTab|null>(null);const [search,setSearch]=useState('');
+ const sections:[SettingsTab,typeof ShieldCheck,string,string][]=[
+  ['team',Users2,ur?'صارفین':'Users',ur?'فارم کے صارفین، عملے کے اکاؤنٹس اور تفویض کردہ کردار سنبھالیں۔':'Manage farm users, staff accounts, assigned roles, and access status.'],
+  ['roles',ShieldCheck,ur?'کردار اور اجازتیں':'Roles & permissions',ur?'فارم کے ہر حصے کے لیے حسب ضرورت کردار اور رسائی متعین کریں۔':'Create reusable roles and control read or write access for every farm module.'],
+  ['farm',Settings2,ur?'فارم کی ترجیحات':'Farm preferences',ur?'زبان، ٹائم زون، اطلاعات اور ای میل کی ترسیل ترتیب دیں۔':'Configure language, time zone, notifications, and email delivery.'],
+  ['dropdowns',ListChecks,ur?'ایپ ڈراپ ڈاؤنز':'Application dropdowns',ur?'ریکارڈ فارم میں استعمال ہونے والے اضافی اختیارات سنبھالیں۔':'Manage additional choices used throughout record forms.'],
+  ...(management?[['workspace',Building2,ur?'ڈیری فارم':'Dairy farm',ur?'فارم اور تنظیم کی بنیادی معلومات سنبھالیں۔':'Manage the farm and organization details.'] as [SettingsTab,typeof ShieldCheck,string,string]]:[])
+ ];
+ const filtered=sections.filter(([, ,title,description])=>(title+' '+description).toLowerCase().includes(search.toLowerCase()));
+ if(!tab)return <div className="app-view settings-control-center">
+  <section className="settings-hero"><span className="settings-eyebrow"><Settings2 size={14}/>{ur?'کنٹرول سینٹر':'Control center'}</span><h2>{ur?'ترتیبات':'Settings'}</h2><p>{ur?'صارفین، اجازتیں، فارم کی ترجیحات اور ایپ کی ترتیب ایک جگہ سے سنبھالیں۔':'Configure your workspace — users, permissions, farm preferences, and application choices.'}</p></section>
+  <label className="settings-search"><Search size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder={ur?'ترتیبات تلاش کریں…':'Search settings…'} aria-label={ur?'ترتیبات تلاش کریں':'Search settings'}/></label>
+  <section className="settings-category"><div><h3>{ur?'صارفین اور فارم کی ترتیب':'Users & farm access'}</h3><p>{ur?'لوگ، کردار، رسائی اور ورک اسپیس کی ترجیحات':'People, roles, access, and workspace preferences'}</p></div>
+   <div className="settings-card-grid">{filtered.map(([key,Icon,title,description])=><button type="button" aria-label={key==='team'?'Team':title} className={`settings-card settings-card-${key}`} key={key} onClick={()=>setTab(key)}><span className="settings-card-icon"><Icon size={21}/></span><span><strong>{title}</strong><small>{description}</small></span><ChevronRight size={17}/></button>)}</div>
+   {!filtered.length&&<p className="table-empty">{ur?'کوئی ترتیب نہیں ملی۔':'No settings match your search.'}</p>}
+  </section>
+ </div>;
+ const current=sections.find(([key])=>key===tab)!;const CurrentIcon=current[1];
  return <div className="app-view">
-  <div className="module-heading"><div><h2>{ur?'ترتیبات اور ٹیم':'Settings & team'}</h2><p>{ur?'کردار اور اجازتیں، فارم کے ارکان، اور فارم کی بنیادی ترجیحات یہاں سے سنبھالیں۔':'Manage roles, permissions, team members, and farm-level preferences from one place.'}</p></div></div>
-  <div className="history-tabs accounting-tabs">
-   <button className={tab==='roles'?'button small':'secondary-button'} onClick={()=>setTab('roles')}><ShieldCheck size={15}/>{ur?'کردار اور اجازتیں':'Roles & permissions'}</button>
-   <button className={tab==='team'?'button small':'secondary-button'} onClick={()=>setTab('team')}><Users2 size={15}/>{ur?'ٹیم':'Team'}</button>
-   <button className={tab==='farm'?'button small':'secondary-button'} onClick={()=>setTab('farm')}><Settings2 size={15}/>{ur?'فارم کی ترتیب':'Farm settings'}</button>
-   <button className={tab==='dropdowns'?'button small':'secondary-button'} onClick={()=>setTab('dropdowns')}>Application dropdowns</button>
-   {management&&<button className={tab==='workspace'?'button small':'secondary-button'} onClick={()=>setTab('workspace')}><Settings2 size={15}/>{ur?'ڈیری فارم':'Dairy Farm'}</button>}
-  </div>
+  <button type="button" className="settings-back" onClick={()=>setTab(null)}><span><ArrowLeft size={15}/></span><strong>{ur?'تمام ترتیبات':'All settings'}</strong><small>{ur?'کنٹرول سینٹر پر واپس':'Back to control center'}</small></button>
+  <div className="settings-section-heading"><span className={`settings-card-icon settings-card-${tab}`}><CurrentIcon size={22}/></span><div><h2>{current[2]}</h2><p>{current[3]}</p></div></div>
   {tab==='dropdowns'?<DropdownSettings base={base} readOnly={readOnly}/>:tab==='workspace'?management:tab==='roles'?<RolesView base={base} ur={ur} readOnly={readOnly}/>:tab==='team'?<TeamView base={base} ur={ur} readOnly={readOnly}/>:<FarmSettingsView base={base} ur={ur} readOnly={readOnly}/>} 
  </div>;
 }
 function RolesView({base,ur,readOnly}:{base:string;ur:boolean;readOnly:boolean}){
- const [roles,setRoles]=useState<Row[]>([]);const [perms,setPerms]=useState<Record<string,Record<string,string>>>({});const [error,setError]=useState('');
- const [adding,setAdding]=useState(false);const [editingRole,setEditingRole]=useState<Row|null>(null);const [name,setName]=useState('');const [desc,setDesc]=useState('');const [draft,setDraft]=useState<Record<string,string>>({});const [busy,setBusy]=useState(false);
- const load=useCallback(async()=>{try{const d=await api(base+'/roles');setRoles(d.roles);const p:Record<string,Record<string,string>>={};for(const x of d.permissions){if(!p[x.role_id])p[x.role_id]={};p[x.role_id][x.module]=x.access;}setPerms(p);setError('')}catch(e){setError((e as Error).message)}},[base]);
+ const [roles,setRoles]=useState<Row[]>([]);const [perms,setPerms]=useState<Record<string,Record<string,string>>>({});const [selectedRoleId,setSelectedRoleId]=useState('');const [permDraft,setPermDraft]=useState<Record<string,string>>({});const [error,setError]=useState('');const [ok,setOk]=useState('');
+ const [adding,setAdding]=useState(false);const [editingRole,setEditingRole]=useState<Row|null>(null);const [name,setName]=useState('');const [desc,setDesc]=useState('');const [roleDraft,setRoleDraft]=useState<Record<string,string>>({});const [busy,setBusy]=useState(false);
+ const load=useCallback(async()=>{try{const d=await api(base+'/roles');setRoles(d.roles);const p:Record<string,Record<string,string>>={};for(const x of d.permissions){if(!p[x.role_id])p[x.role_id]={};p[x.role_id][x.module]=x.access;}setPerms(p);setSelectedRoleId(previous=>{const id=d.roles.some((r:Row)=>String(r.id)===previous)?previous:String(d.roles[0]?.id||'');setPermDraft({...p[id]});return id});setError('')}catch(e){setError((e as Error).message)}},[base]);
  useEffect(()=>{void load()},[load]);
- async function create(e:React.FormEvent){e.preventDefault();setBusy(true);try{await api(editingRole?base+'/roles/'+editingRole.id:base+'/roles',{method:editingRole?'PUT':'POST',body:JSON.stringify({name,description:desc,permissions:permissionModules.map(m=>({module:m.key,access:draft[m.key]||'none'}))})});setAdding(false);setEditingRole(null);setName('');setDesc('');setDraft({});await load()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ const selected=roles.find(r=>String(r.id)===selectedRoleId);const editable=!!selected&&!isSystem(selected)&&!readOnly;const enabled=modules.filter(m=>(permDraft[m.key]||'none')!=='none').length;const writable=modules.filter(m=>(permDraft[m.key]||'none')==='write').length;
+ function selectRole(r:Row){const id=String(r.id);setSelectedRoleId(id);setPermDraft({...perms[id]});setError('');setOk('')}
+ function setAll(access:string){if(editable)setPermDraft(Object.fromEntries(modules.map(m=>[m.key,access])))}
+ async function savePermissions(){if(!selected||!editable)return;setBusy(true);setError('');setOk('');try{await api(base+'/roles/'+selectedRoleId,{method:'PUT',body:JSON.stringify({name:String(selected.name),description:String(selected.description||''),permissions:modules.map(m=>({module:m.key,access:permDraft[m.key]||'none'}))})});setPerms(p=>({...p,[selectedRoleId]:{...permDraft}}));setOk(ur?'اجازتیں محفوظ ہو گئیں۔':'Permissions saved.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ async function create(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{await api(editingRole?base+'/roles/'+editingRole.id:base+'/roles',{method:editingRole?'PUT':'POST',body:JSON.stringify({name,description:desc,permissions:permissionModules.map(m=>({module:m.key,access:roleDraft[m.key]||'none'}))})});setAdding(false);setEditingRole(null);setName('');setDesc('');setRoleDraft({});await load()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ function openNew(){setEditingRole(null);setName('');setDesc('');setRoleDraft({});setError('');setAdding(true)}
+ function openEdit(r:Row){setEditingRole(r);setName(String(r.name));setDesc(String(r.description||''));setRoleDraft({...perms[String(r.id)]});setError('');setAdding(true)}
  if(error&&!adding&&roles.length===0)return <div className="form-error" role="alert">{error}</div>;
- return <div className="settings-layout roles-layout">
-  <section className="workspace-panel"><div className="record-toolbar"><h3>{ur?'کردار':'Roles'}</h3>{!readOnly&&<button className="button small" onClick={()=>setAdding(true)}><Plus size={15}/>{ur?'نیا کردار':'New role'}</button>}</div>
-   {roles.length===0&&<p className="search-note">{ur?'ابھی کوئی کردار نہیں':'No custom roles yet.'}</p>}
-   {roles.map(r=><div key={String(r.id)} className="settings-row"><strong>{r.name}</strong>{r.description&&<span>{r.description}</span>}{isSystem(r)&&<small>{ur?'سسٹم':'System'}</small>}{!readOnly&&<button className="row-action" onClick={()=>{setEditingRole(r);setName(String(r.name));setDesc(String(r.description||''));setDraft(perms[String(r.id)]||{});setAdding(true)}}>{ur?'ترمیم':'Edit'}</button>}</div>)}
-   <p className="search-note">{ur?'نوٹ: OWNER کے تمام حقوق ہیں؛ VIEWER صرف پڑھ سکتا ہے۔':'Note: OWNER holds full rights; VIEWER is read-only.'}</p>
+ return <div className="crm-roles-layout">
+  <section className="workspace-panel crm-role-list"><div className="record-toolbar"><div><h3>{ur?'کردار':'Roles'}</h3><p>{ur?'اجازتیں دیکھنے یا تبدیل کرنے کے لیے کردار منتخب کریں۔':'Select a role to view or configure its permissions.'}</p></div>{!readOnly&&<button className="button small" onClick={openNew}><Plus size={15}/>{ur?'نیا کردار':'New role'}</button>}</div>
+   <div className="crm-role-items">{roles.map(r=><button type="button" key={String(r.id)} className={selectedRoleId===String(r.id)?'crm-role-item selected':'crm-role-item'} onClick={()=>selectRole(r)}><span className="role-shield"><ShieldCheck size={16}/></span><span><strong>{r.name}</strong><small>{r.description||lab('Farm access role','فارم رسائی کا کردار',ur)}</small></span>{isSystem(r)&&<em>{ur?'سسٹم':'System'}</em>}<ChevronRight size={15}/></button>)}</div>
+   {!roles.length&&<p className="table-empty">{ur?'ابھی کوئی کردار نہیں۔':'No roles defined.'}</p>}
   </section>
-<section className="workspace-panel"><h3>{lab('Permissions','اجازتیں',ur)}</h3>
-    {roles.length===0?<p className="search-note">{lab('Create a role to see permissions.','اجازتیں دیکھنے کے لیے کردار بنائیں',ur)}</p>:<div className="records-table-wrap permissions-scroll" tabIndex={0} aria-label="Role permissions"><table className="records-table"><thead><tr><th>{lab('Role','کردار',ur)}</th>{modules.map(m=><th key={m.key} title={m.en}>{lab(m.en,m.ur,ur)}</th>)}</tr></thead><tbody>
-    {roles.map(r=><tr key={String(r.id)}><td>{r.name}</td>{modules.map(m=>{const v=perms[String(r.id)]?.[m.key]||'none';const editable=!isSystem(r)&&!readOnly;return <td key={m.key}>{editable?<SearchSelect aria-label={String(r.name)+' '+m.en+' permission'} disabled={busy} value={v} onChange={async e=>{setBusy(true);const val=e.target.value;const newPerms={...(perms[String(r.id)]||{}),[m.key]:val};try{await api(base+'/roles/'+String(r.id),{method:'PUT',body:JSON.stringify({name:String(r.name),description:String(r.description||''),permissions:modules.map(x=>({module:x.key,access:x.key===m.key?val:(perms[String(r.id)]?.[x.key]||'none')}))})});setPerms(p=>({...p,[String(r.id)]:newPerms}))}catch(err){setError((err as Error).message)}finally{setBusy(false)}}}>{PERM.map(p=><option key={p} value={p}>{lab(LEVEL[p][0],LEVEL[p][1],ur)}</option>)}</SearchSelect>:PERM.map(p=>p===v?lab(LEVEL[p][0],LEVEL[p][1],ur):'').join('')}</td>})}</tr>)}
-   </tbody></table></div>}
-   {error&&<div className="form-error" role="alert">{error}</div>}
-  </section>
-  {adding&&<div className="modal-backdrop"><section className="record-modal" role="dialog" aria-modal="true"><div className="modal-heading"><h2><ShieldCheck size={17}/> {ur?'نیا کردار':'New role'}</h2><button className="row-action" onClick={()=>setAdding(false)} aria-label="Close">✕</button></div><form onSubmit={create}><div className="fields-grid">
-   <label className="form-field">{ur?'کردار کا نام':'Role name'} *<input value={name} onChange={e=>setName(e.target.value)} required maxLength={80}/></label>
-   <label className="form-field wide">{ur?'تفصیل':'Description'}<input value={desc} onChange={e=>setDesc(e.target.value)} maxLength={300}/></label>
-   {modules.map(m=><label className="form-field" key={m.key}>{lab(m.en,m.ur,ur)}<SearchSelect value={draft[m.key]||'none'} onChange={e=>setDraft(p=>({...p,[m.key]:e.target.value}))}>{PERM.map(p=><option key={p} value={p}>{lab(LEVEL[p][0],LEVEL[p][1],ur)}</option>)}</SearchSelect></label>)}
-  </div>{error&&<div className="form-error" role="alert">{error}</div>}<div className="modal-footer"><button type="button" className="secondary-button" onClick={()=>setAdding(false)}>{ur?'منسوخ':'Cancel'}</button><button className="button" disabled={busy}>{busy?'…':ur?'محفوظ کریں':'Save'}</button></div></form></section></div>}
+  <section className="workspace-panel crm-permission-panel">{selected?<>
+   <div className="crm-permission-head"><div><h3><ShieldCheck size={17}/>{lab('Module permissions','ماڈیول کی اجازتیں',ur)} <span>— {String(selected.name)}</span></h3><p>{lab('Choose an access level for each module. Changes apply when you save.','ہر ماڈیول کے لیے رسائی منتخب کریں۔ تبدیلیاں محفوظ کرنے پر لاگو ہوں گی۔',ur)}</p></div>{editable&&<button type="button" className="secondary-button" onClick={()=>openEdit(selected)}>{ur?'کردار میں ترمیم':'Edit role'}</button>}</div>
+   <div className="permission-summary"><span><CheckCircle2 size={14}/><strong>{enabled}/{modules.length}</strong> {ur?'فعال':'enabled'}</span><span><strong>{writable}</strong> {ur?'تحریری رسائی':'write access'}</span>{editable&&<div><button type="button" onClick={()=>setAll('read')}>{ur?'سب پڑھیں':'Read all'}</button><button type="button" onClick={()=>setAll('write')}>{ur?'سب لکھیں':'Write all'}</button><button type="button" onClick={()=>setAll('none')}>{ur?'سب بند':'Disable all'}</button></div>}</div>
+   <div className="crm-permissions-table"><table><thead><tr><th>{lab('Module','ماڈیول',ur)}</th>{PERM.map(p=><th key={p}>{lab(LEVEL[p][0],LEVEL[p][1],ur)}</th>)}</tr></thead><tbody>{modules.map((m,index)=>{const value=permDraft[m.key]||'none';return <tr key={m.key} className={index%2?'alternate':''}><td><strong>{lab(m.en,m.ur,ur)}</strong><small>{m.description}</small></td>{PERM.map(access=><td key={access}><button type="button" disabled={!editable||busy} aria-label={String(selected.name)+' '+m.en+' '+access} aria-pressed={value===access} className={'permission-choice '+access+(value===access?' active':'')} onClick={()=>setPermDraft(p=>({...p,[m.key]:access}))}><span/></button></td>)}</tr>})}</tbody></table></div>
+   {error&&<div className="form-error" role="alert">{error}</div>}{ok&&<div className="form-success" role="status">{ok}</div>}
+   {editable&&<div className="permission-savebar"><span>{ur?'غیر محفوظ تبدیلیاں محفوظ کرنے کے لیے کلک کریں۔':'Review your access levels, then apply them to this role.'}</span><button type="button" className="button small" disabled={busy} onClick={()=>void savePermissions()}><Save size={15}/>{busy?'…':ur?'اجازتیں محفوظ کریں':'Save permissions'}</button></div>}
+   {!editable&&<p className="permission-system-note">{isSystem(selected)?lab('System roles are protected and cannot be edited.','سسٹم کردار محفوظ ہیں اور تبدیل نہیں کیے جا سکتے۔',ur):lab('You have read-only access to role settings.','آپ کو کردار کی ترتیبات تک صرف پڑھنے کی رسائی ہے۔',ur)}</p>}
+  </>:<p className="table-empty">{lab('Select a role to edit permissions.','اجازتیں تبدیل کرنے کے لیے کردار منتخب کریں۔',ur)}</p>}</section>
+  {adding&&<div className="modal-backdrop"><section className="record-modal" role="dialog" aria-modal="true"><div className="modal-heading"><h2><ShieldCheck size={17}/> {editingRole?(ur?'کردار میں ترمیم':'Edit role'):(ur?'نیا کردار':'New role')}</h2><button className="row-action" onClick={()=>setAdding(false)} aria-label="Close">✕</button></div><form onSubmit={create}><div className="fields-grid"><label className="form-field">{ur?'کردار کا نام':'Role name'} *<input value={name} onChange={e=>setName(e.target.value)} required maxLength={80}/></label><label className="form-field wide">{ur?'تفصیل':'Description'}<input value={desc} onChange={e=>setDesc(e.target.value)} maxLength={300}/></label>{modules.map(m=><label className="form-field" key={m.key}>{lab(m.en,m.ur,ur)}<SearchSelect value={roleDraft[m.key]||'none'} onChange={e=>setRoleDraft(p=>({...p,[m.key]:e.target.value}))}>{PERM.map(p=><option key={p} value={p}>{lab(LEVEL[p][0],LEVEL[p][1],ur)}</option>)}</SearchSelect></label>)}</div>{error&&<div className="form-error" role="alert">{error}</div>}<div className="modal-footer"><button type="button" className="secondary-button" onClick={()=>setAdding(false)}>{ur?'منسوخ':'Cancel'}</button><button className="button" disabled={busy}>{busy?'…':ur?'محفوظ کریں':'Save'}</button></div></form></section></div>}
  </div>;
 }
 function TeamView({base,ur,readOnly}:{base:string;ur:boolean;readOnly:boolean}){
@@ -79,10 +94,10 @@ function TeamView({base,ur,readOnly}:{base:string;ur:boolean;readOnly:boolean}){
  </div>;
 }
 function FarmSettingsView({base,ur,readOnly}:{base:string;ur:boolean;readOnly:boolean}){
- const [values,setValues]=useState(defaultFarmSettings);const [testRecipient,setTestRecipient]=useState('');const [busy,setBusy]=useState(false);const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [ok,setOk]=useState('');
+ const [values,setValues]=useState(defaultFarmSettings);const [testRecipient,setTestRecipient]=useState('');const [smtpEditing,setSmtpEditing]=useState(false);const [busy,setBusy]=useState(false);const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [ok,setOk]=useState('');
  const load=useCallback(async()=>{try{const data=await api(base+'/settings');setValues({...defaultFarmSettings,...data});setError('')}catch(e){setError((e as Error).message)}finally{setLoading(false)}},[base]);
  useEffect(()=>{void load()},[load]);
- async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');setOk('');try{await api(base+'/settings',{method:'PUT',body:JSON.stringify(values)});setOk(ur?'فارم کی ترتیبات محفوظ ہو گئیں۔':'Farm settings saved.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');setOk('');try{await api(base+'/settings',{method:'PUT',body:JSON.stringify(values)});setOk(ur?'فارم کی ترتیبات محفوظ ہو گئیں۔':'Farm settings saved.');setSmtpEditing(false)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function testEmail(){setBusy(true);setError('');setOk('');try{await api(base+'/settings/test-email',{method:'POST',body:JSON.stringify({recipient:testRecipient,settings:values})});setOk(ur?'SMTP کنکشن کامیاب ہے اور ٹیسٹ ای میل بھیج دی گئی۔':'SMTP configuration verified and test email sent.')}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  if(loading)return <div className="table-empty" role="status">{ur?'فارم کی ترتیبات لوڈ ہو رہی ہیں…':'Loading farm settings…'}</div>;
  return <form className="settings-layout" onSubmit={save}>
@@ -101,20 +116,20 @@ function FarmSettingsView({base,ur,readOnly}:{base:string;ur:boolean;readOnly:bo
    {ok&&<div className="form-success" role="status">{ok}</div>}
    {!readOnly&&<div className="modal-footer"><button className="button" disabled={busy}>{busy?(ur?'محفوظ ہو رہا ہے…':'Saving…'):(ur?'ترتیبات محفوظ کریں':'Save settings')}</button></div>}
   </section>
-  <section className="workspace-panel smtp-panel">
-   <div className="record-toolbar"><h3>{ur?'ای میل (SMTP)':'Email delivery (SMTP)'}</h3></div>
-   <div className="fields-grid">
-    <label className="form-field">{ur?'حالت':'Status'}<SearchSelect value={values.smtpEnabled} onChange={e=>setValues(v=>({...v,smtpEnabled:e.target.value}))} disabled={readOnly}><option>Disabled</option><option>Enabled</option></SearchSelect></label>
-    <label className="form-field">{ur?'سیکیورٹی':'Security'}<SearchSelect value={values.smtpSecurity} onChange={e=>setValues(v=>({...v,smtpSecurity:e.target.value}))} disabled={readOnly}><option>STARTTLS</option><option>TLS</option><option>None</option></SearchSelect></label>
-    <label className="form-field">{ur?'SMTP ہوسٹ':'SMTP host'}<input value={values.smtpHost} onChange={e=>setValues(v=>({...v,smtpHost:e.target.value}))} disabled={readOnly} placeholder="smtp.example.com"/></label>
-    <label className="form-field">{ur?'پورٹ':'Port'}<input type="number" min="1" max="65535" value={values.smtpPort} onChange={e=>setValues(v=>({...v,smtpPort:e.target.value}))} disabled={readOnly}/></label>
-    <label className="form-field">{ur?'صارف نام':'Username'}<input value={values.smtpUsername} onChange={e=>setValues(v=>({...v,smtpUsername:e.target.value}))} disabled={readOnly}/></label>
-    <label className="form-field">{ur?'پاس ورڈ':'Password'}<input type="password" value={values.smtpPassword} onChange={e=>setValues(v=>({...v,smtpPassword:e.target.value}))} disabled={readOnly} autoComplete="new-password"/></label>
-    <label className="form-field">{ur?'بھیجنے والے کا نام':'From name'}<input value={values.smtpFromName} onChange={e=>setValues(v=>({...v,smtpFromName:e.target.value}))} disabled={readOnly}/></label>
-    <label className="form-field">{ur?'بھیجنے والا ای میل':'From email'}<input type="email" value={values.smtpFromEmail} onChange={e=>setValues(v=>({...v,smtpFromEmail:e.target.value}))} disabled={readOnly}/></label>
-    <label className="form-field wide">{ur?'ٹیسٹ ای میل وصول کنندہ':'Test email recipient'}<input type="email" value={testRecipient} onChange={e=>setTestRecipient(e.target.value)} disabled={readOnly} placeholder="you@example.com"/></label>
-   </div>
-   {!readOnly&&<div className="smtp-actions"><button type="button" className="secondary-button" disabled={busy||!testRecipient||!values.smtpHost||!values.smtpFromEmail} onClick={()=>void testEmail()}>{ur?'کنفیگریشن ٹیسٹ کریں اور ای میل بھیجیں':'Test configuration & send email'}</button></div>}
+  <section className="workspace-panel smtp-panel crm-smtp-panel">
+   <div className="crm-smtp-head"><div><span className="smtp-icon"><Mail size={19}/></span><span><h3>{ur?'ای میل کی ترسیل (SMTP)':'Email delivery (SMTP)'}</h3><p>{ur?'اطلاعات، رپورٹس اور خودکار پیغامات کے لیے فارم کا بیرونی میل سرور۔':'The farm outgoing mail server for notifications, reports, and automated messages.'}</p></span></div>{!readOnly&&(smtpEditing?<div><button type="button" className="secondary-button" onClick={()=>{setSmtpEditing(false);void load()}}><X size={14}/>{ur?'منسوخ':'Cancel'}</button><button type="submit" className="button small" disabled={busy}><Save size={14}/>{busy?'…':ur?'محفوظ کریں':'Save'}</button></div>:<button type="button" className="secondary-button" onClick={()=>setSmtpEditing(true)}><Pencil size={14}/>{ur?'ترمیم':'Edit'}</button>)}</div>
+   <div className="smtp-status-strip"><span className={values.smtpEnabled==='Enabled'?'smtp-status enabled':'smtp-status'}><i/>{values.smtpEnabled==='Enabled'?(ur?'فعال':'Enabled'):(ur?'غیر فعال':'Disabled')}</span><small>{values.smtpHost||lab('No SMTP server configured','کوئی SMTP سرور ترتیب نہیں دیا گیا',ur)}</small></div>
+   <div className="smtp-card"><div className="smtp-card-title"><strong>{ur?'SMTP سرور':'SMTP server'}</strong><small>{ur?'سرور کنکشن اور بھیجنے والے کی شناخت':'Server connection and sender identity'}</small></div><div className="fields-grid smtp-fields">
+    <label className="form-field">{ur?'حالت':'Status'}<SearchSelect value={values.smtpEnabled} onChange={e=>setValues(v=>({...v,smtpEnabled:e.target.value}))} disabled={readOnly||!smtpEditing}><option>Disabled</option><option>Enabled</option></SearchSelect></label>
+    <label className="form-field">{ur?'سیکیورٹی':'Security'}<SearchSelect value={values.smtpSecurity} onChange={e=>setValues(v=>({...v,smtpSecurity:e.target.value}))} disabled={readOnly||!smtpEditing}><option>STARTTLS</option><option>TLS</option><option>None</option></SearchSelect></label>
+    <label className="form-field">{ur?'SMTP ہوسٹ':'SMTP host'}<input value={values.smtpHost} onChange={e=>setValues(v=>({...v,smtpHost:e.target.value}))} disabled={readOnly||!smtpEditing} placeholder="smtp.example.com"/></label>
+    <label className="form-field">{ur?'پورٹ':'Port'}<input type="number" min="1" max="65535" value={values.smtpPort} onChange={e=>setValues(v=>({...v,smtpPort:e.target.value}))} disabled={readOnly||!smtpEditing}/></label>
+    <label className="form-field">{ur?'صارف نام':'Username'}<input value={values.smtpUsername} onChange={e=>setValues(v=>({...v,smtpUsername:e.target.value}))} disabled={readOnly||!smtpEditing} autoComplete="username"/></label>
+    <label className="form-field">{ur?'پاس ورڈ':'Password'}<input type="password" value={values.smtpPassword} onChange={e=>setValues(v=>({...v,smtpPassword:e.target.value}))} disabled={readOnly||!smtpEditing} autoComplete="new-password" placeholder={!smtpEditing&&values.smtpPassword?'••••••••':''}/></label>
+    <label className="form-field">{ur?'بھیجنے والے کا نام':'From name'}<input value={values.smtpFromName} onChange={e=>setValues(v=>({...v,smtpFromName:e.target.value}))} disabled={readOnly||!smtpEditing}/></label>
+    <label className="form-field">{ur?'بھیجنے والا ای میل':'From email'}<input type="email" value={values.smtpFromEmail} onChange={e=>setValues(v=>({...v,smtpFromEmail:e.target.value}))} disabled={readOnly||!smtpEditing} placeholder="noreply@example.com"/></label>
+   </div></div>
+   <div className="smtp-card smtp-test-card"><div className="smtp-card-title"><strong><Send size={15}/>{ur?'ٹیسٹ ای میل بھیجیں':'Send test email'}</strong><small>{ur?'کنکشن کی جانچ کریں اور تصدیق کریں کہ ترسیل کام کر رہی ہے۔':'Verify the connection and confirm that delivery is working.'}</small></div><div className="smtp-test-row"><label className="form-field">{ur?'وصول کنندہ':'Recipient'}<input type="email" value={testRecipient} onChange={e=>setTestRecipient(e.target.value)} disabled={readOnly} placeholder="you@example.com"/></label>{!readOnly&&<button type="button" className="secondary-button" disabled={busy||!testRecipient||!values.smtpHost||!values.smtpFromEmail} onClick={()=>void testEmail()}><PlugZap size={15}/>{busy?'…':ur?'کنکشن ٹیسٹ کریں اور بھیجیں':'Test connection & send'}</button>}</div></div>
   </section>
  </form>;
 }

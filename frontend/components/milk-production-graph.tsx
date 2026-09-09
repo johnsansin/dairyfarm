@@ -9,10 +9,10 @@ export default function MilkProductionGraph({trend,ur}:{trend:TrendRow[];ur:bool
  const [range,setRange]=useState<Range>('week');const [chartType,setChartType]=useState<ChartType>('area');const [showValues,setShowValues]=useState(false);
  const rows=useMemo(()=>{
   const source=trend.map(row=>({date:String(row.date).slice(0,10),quantity:Number(row.quantity)||0}));
-  if(range==='day')return source.slice(-10).map(row=>({...row,label:row.date.slice(5)}));
+  if(range==='day')return source.slice(-10).map(row=>({...row,label:`${row.date.slice(8,10)}-${row.date.slice(5,7)}`}));
   const groups=new Map<string,{quantity:number,label:string,date:string}>();
   for(const row of source){const d=new Date(`${row.date}T00:00:00Z`);let key=row.date,label=row.date;
-   if(range==='week'){const start=new Date(d);start.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));key=start.toISOString().slice(0,10);label=`${ur?'ہفتہ':'W'} ${key.slice(5)}`}
+   if(range==='week'){const start=new Date(d);start.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));key=start.toISOString().slice(0,10);label=`${ur?'ہفتہ':'W'} ${key.slice(8,10)}-${key.slice(5,7)}`}
    if(range==='month'){key=row.date.slice(0,7);label=new Intl.DateTimeFormat(ur?'ur-PK':'en',{month:'short'}).format(d)}
    if(range==='year'){key=row.date.slice(0,4);label=key}
    const old=groups.get(key);groups.set(key,{date:key,label,quantity:(old?.quantity||0)+row.quantity});
