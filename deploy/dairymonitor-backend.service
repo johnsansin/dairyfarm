@@ -1,0 +1,18 @@
+[Unit]
+Description=DairyMonitor backend API
+Requires=dairymonitor-db.service
+After=dairymonitor-db.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/dairyfarm/backend
+Environment=NODE_ENV=production
+ExecStartPre=/bin/bash -c 'for i in {1..30}; do (echo >/dev/tcp/127.0.0.1/5432) >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1'
+ExecStartPre=/usr/bin/npm run db:migrate
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

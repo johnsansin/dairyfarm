@@ -1,0 +1,15 @@
+[Unit]
+Description=DairyMonitor embedded PostgreSQL
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/dairyfarm/backend
+ExecStart=/usr/bin/npm run dev:db
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

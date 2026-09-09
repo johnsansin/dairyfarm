@@ -1,0 +1,17 @@
+[Unit]
+Description=DairyMonitor frontend
+Requires=dairymonitor-backend.service
+After=dairymonitor-backend.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/dairyfarm/frontend
+Environment=NODE_ENV=production
+Environment=API_URL=http://127.0.0.1:4000
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

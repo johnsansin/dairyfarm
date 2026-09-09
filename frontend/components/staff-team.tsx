@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {api} from './api';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 
 export default function StaffTeam({base,readOnly,ur}:{base:string;readOnly:boolean;ur:boolean}){
  const [staff,setStaff]=useState<any[]>([]),[roles,setRoles]=useState<any[]>([]),[selected,setSelected]=useState(''),[view,setView]=useState<any>(null),[role,setRole]=useState(''),[email,setEmail]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);

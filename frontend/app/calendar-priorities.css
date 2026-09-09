@@ -1,0 +1,14 @@
+/* Task colors communicate priority without overriding clinical event categories. */
+.calendar-page .calendar-event.task{position:relative;background:#e8f2eb;color:#245f42;border-color:#cfe3d5}
+.calendar-page .calendar-event.task::before{content:'';position:absolute;inset:4px auto 4px 3px;width:3px;border-radius:3px;background:#4c9871}
+.calendar-page .calendar-event.task.priority-high{background:#fff1d8;color:#8a5a15;border-color:#efd39f}
+.calendar-page .calendar-event.task.priority-high::before{background:#c98a2e}
+.calendar-page .calendar-event.task.priority-urgent{background:#f9e4de;color:#a63c29;border-color:#edc3b9;box-shadow:0 4px 10px rgba(183,69,47,.10)}
+.calendar-page .calendar-event.task.priority-urgent::before{background:#b7452f}
+.calendar-page .calendar-event.task.priority-normal{background:#e7f1f7;color:#286889;border-color:#c9dfe9}
+.calendar-page .calendar-event.task.priority-normal::before{background:#2e7da8}
+.calendar-page .calendar-event.task.status-completed,.calendar-page .calendar-event.task.status-verified{opacity:.65;filter:saturate(.65)}
+html[data-theme=dark] .calendar-page .calendar-event.task.priority-normal{background:#18303d;color:#a9d5e9;border-color:#294a5a}
+html[data-theme=dark] .calendar-page .calendar-event.task.priority-high{background:#352916;color:#f0cb8a;border-color:#594522}
+html[data-theme=dark] .calendar-page .calendar-event.task.priority-urgent{background:#381e19;color:#efafa2;border-color:#603128}
+[dir=rtl] .calendar-page .calendar-event.task::before{left:auto;right:3px}

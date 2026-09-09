@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { db } from './db';
 import {operations,DomainError} from './modules/operations';
 import {appRouter} from './modules/app';
+import {taskFollowups} from './modules/task-followups';
 import { registration, login, farmInput, organizationInput } from './validation';
 const app = express();
 app.disable('x-powered-by');
@@ -151,6 +152,7 @@ app.put('/api/v1/farms/:id',authenticated,async(req,res)=>{
 });
 app.use('/api/v1/farms/:farmId',authenticated,operations);
 app.use('/api/v1/farms/:farmId',authenticated,appRouter);
+app.use('/api/v1/farms/:farmId',authenticated,taskFollowups);
 app.use((err:unknown,_req:Request,res:Response,_next:NextFunction)=>{
  if(err instanceof Error&&'status' in err&&Number(err.status)===400){res.status(400).json({error:err.message});return;}
  if(err instanceof DomainError){res.status(err.status).json({error:err.message});return;}

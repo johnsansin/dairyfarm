@@ -1,0 +1,32 @@
+/* Dimensional, responsive treatment for the live milk-production card. */
+.milk-chart-card{
+ isolation:isolate;position:relative;overflow:hidden;min-height:390px;
+ background:
+  radial-gradient(circle at 88% 5%,rgba(201,138,46,.13),transparent 25%),
+  linear-gradient(145deg,rgba(255,255,255,.98),rgba(244,249,245,.96));
+ border:1px solid rgba(46,107,78,.15);box-shadow:0 24px 55px rgba(35,79,59,.13),0 6px 14px rgba(35,79,59,.08),inset 0 1px 0 rgba(255,255,255,.9);
+ transform-style:preserve-3d;perspective:1100px;transition:transform .25s ease,box-shadow .25s ease
+}
+.milk-chart-card::before{content:'';position:absolute;z-index:-1;inset:auto 7% -34px;height:70px;border-radius:50%;background:rgba(35,79,59,.15);filter:blur(25px);transform:translateZ(-30px)}
+.milk-chart-card::after{content:'';position:absolute;z-index:0;right:-70px;top:-90px;width:220px;height:220px;border:1px solid rgba(46,107,78,.10);border-radius:50%;box-shadow:0 0 0 34px rgba(46,107,78,.035),0 0 0 68px rgba(46,107,78,.02);pointer-events:none}
+.milk-chart-card:hover{transform:translateY(-4px) rotateX(1deg);box-shadow:0 30px 65px rgba(35,79,59,.17),0 9px 18px rgba(35,79,59,.09),inset 0 1px 0 white}
+.milk-chart-card .ov-card-head{position:relative;z-index:3;padding:0 2px 17px;border-bottom:1px solid rgba(46,107,78,.12)}
+.milk-chart-card .ov-card-title{font-size:17px}.milk-chart-card .ov-card-head small{margin-top:4px}
+.milk-chart-card .chart-legend{padding:7px 11px;border:1px solid rgba(46,107,78,.11);border-radius:999px;background:rgba(229,240,231,.72);color:#2e6b4e;box-shadow:0 5px 12px rgba(35,79,59,.07)}
+.milk-chart-card .chart-legend i{box-shadow:0 0 0 4px rgba(46,107,78,.10)}
+.milk-chart-card .line-chart{z-index:2;margin:12px 3px 0;padding:26px 16px 13px;min-height:275px;border:1px solid rgba(46,107,78,.10);border-radius:17px;background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(229,240,231,.45));box-shadow:inset 0 1px 0 white,0 15px 24px rgba(35,79,59,.08);transform:rotateX(2deg);transform-origin:center bottom;overflow:hidden}
+.milk-chart-card .line-chart::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),rgba(46,107,78,.035) 10%);pointer-events:none}
+.milk-chart-card .line-chart::after{content:'';position:absolute;left:3%;right:3%;bottom:-16px;height:34px;border-radius:50%;background:rgba(35,79,59,.12);filter:blur(14px);pointer-events:none}
+.milk-chart-card .line-chart svg{position:relative;z-index:1;height:205px;filter:drop-shadow(0 9px 7px rgba(46,107,78,.14));overflow:visible}
+.milk-chart-card .chart-gridline{stroke:rgba(46,107,78,.10);stroke-dasharray:4 5}
+.milk-chart-card .milk-line{stroke-width:4;filter:drop-shadow(0 5px 3px rgba(46,107,78,.23))}
+.milk-chart-card .chart-point{stroke-width:2.4;filter:drop-shadow(0 4px 3px rgba(35,79,59,.2))}
+.milk-chart-card .peak-point{r:6;filter:drop-shadow(0 5px 4px rgba(201,138,46,.38))}
+.milk-chart-card .peak-label{z-index:3;top:7px;right:12px;padding:6px 11px;border-radius:9px;background:linear-gradient(135deg,#21281f,#394536);box-shadow:0 8px 18px rgba(33,40,31,.22)}
+.milk-chart-card .chart-labels{position:relative;z-index:2;padding:7px 1px 0;font-variant-numeric:tabular-nums}
+html[data-theme=dark] .milk-chart-card{background:radial-gradient(circle at 88% 5%,rgba(201,138,46,.12),transparent 25%),linear-gradient(145deg,#142019,#0f1813);border-color:#294132;box-shadow:0 24px 55px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.04)}
+html[data-theme=dark] .milk-chart-card .line-chart{background:linear-gradient(180deg,rgba(24,38,29,.94),rgba(20,48,31,.66));border-color:#294132;box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 16px 26px rgba(0,0,0,.24)}
+html[data-theme=dark] .milk-chart-card .chart-legend{background:#1d3225;border-color:#294132;color:#a9d2b8}
+@media(max-width:720px){.milk-chart-card{min-height:340px;padding:17px}.milk-chart-card:hover{transform:translateY(-2px)}.milk-chart-card .line-chart{min-height:225px;margin-inline:0;padding:23px 8px 10px;border-radius:14px;transform:rotateX(1deg)}.milk-chart-card .line-chart svg{height:165px}.milk-chart-card .chart-legend{padding:6px 8px;font-size:10px}.milk-chart-card .peak-label{top:5px;right:7px;font-size:9px}}
+@media(max-width:430px){.milk-chart-card{min-height:310px}.milk-chart-card .ov-card-head{align-items:flex-start}.milk-chart-card .chart-legend{max-width:105px;white-space:normal}.milk-chart-card .line-chart{min-height:205px;padding-inline:5px}.milk-chart-card .line-chart svg{height:148px}.milk-chart-card .chart-labels{font-size:9px}.milk-chart-card .peak-label{padding:5px 8px}}
+@media(prefers-reduced-motion:reduce){.milk-chart-card{transition:none}.milk-chart-card:hover{transform:none}}

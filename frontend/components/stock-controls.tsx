@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 import {api} from './api';
 type Item={id:string;name:string;category:string;unit:string;stock_quantity:string};
 export type Usage={item_id:string;quantity:number};

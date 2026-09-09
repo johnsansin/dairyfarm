@@ -2,8 +2,9 @@ import EmbeddedPostgres from 'embedded-postgres';
 import {existsSync} from 'node:fs';
 import {readFile} from 'node:fs/promises';
 async function main(){
- const pg=new EmbeddedPostgres({databaseDir:'.local-db',user:'dairymonitor',password:'dairymonitor_local',port:5432,persistent:true,authMethod:'scram-sha-256',postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:console.error});
- if(!existsSync('.local-db/PG_VERSION'))await pg.initialise();
+ const databaseDir='../.local-db';
+ const pg=new EmbeddedPostgres({databaseDir,user:'dairymonitor',password:'dairymonitor_local',port:5432,persistent:true,authMethod:'scram-sha-256',postgresFlags:['-h','127.0.0.1'],onLog:()=>{},onError:console.error});
+ if(!existsSync(databaseDir+'/PG_VERSION'))await pg.initialise();
  await pg.start();
  const client=pg.getPgClient('postgres');await client.connect();
  const check=await client.query("SELECT 1 FROM pg_database WHERE datname='dairymonitor'");

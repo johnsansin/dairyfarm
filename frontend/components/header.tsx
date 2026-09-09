@@ -1,13 +1,13 @@
 'use client';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 import {useEffect,useRef,useState} from 'react';
 import {Bell,LogOut,Search,UserRound,ChevronDown,Building2,Moon,Sun,Menu} from 'lucide-react';
 import Brand from './brand';
 import {api} from './api';
 interface Farm{id:string;name:string;city:string;currency:string;role:string;organization_name?:string|null;organization_slug?:string|null}
 interface Notification{id:string;type:string;title:string;body:string;link:string;is_read:boolean;created_at:string}
-export default function Header({ur,toggle,dark,toggleDark,user,farms,selected,onSelect,base,busy,onLogout,onProfile,onSettings,menuOpen,onMenu}:{
- ur:boolean;toggle:()=>void;dark:boolean;toggleDark:()=>void;user:{name:string}|null;farms:Farm[];selected:string;onSelect:(v:string)=>void;base:(farmId:string)=>string;busy:boolean;onLogout:()=>void;onProfile:()=>void;onSettings:()=>void;menuOpen:boolean;onMenu:()=>void;
+export default function Header({ur,toggle,dark,toggleDark,user,farms,selected,onSelect,base,busy,onLogout,onProfile,onSettings,onDashboard,menuOpen,onMenu}:{
+ ur:boolean;toggle:()=>void;dark:boolean;toggleDark:()=>void;user:{name:string}|null;farms:Farm[];selected:string;onSelect:(v:string)=>void;base:(farmId:string)=>string;busy:boolean;onLogout:()=>void;onProfile:()=>void;onSettings:()=>void;onDashboard:()=>void;menuOpen:boolean;onMenu:()=>void;
 }){
  const [query,setQuery]=useState('');const [results,setResults]=useState<{id:string;tag:string;name:string|null|undefined;farmId:string;farmName:string}[]>([]);const [searching,setSearching]=useState(false);const [showResults,setShowResults]=useState(false);
  const [notifOpen,setNotifOpen]=useState(false);const [notifs,setNotifs]=useState<Notification[]>([]);const [unread,setUnread]=useState(0);const [loadingNotifs,setLoadingNotifs]=useState(false);
@@ -30,7 +30,7 @@ const [userMenu,setUserMenu]=useState(false);
  return <header className="app-header">
 <div className="header-inner">
   <button className="menu-btn" onClick={onMenu} aria-label={ur?'مینو کھولیں / بند کریں':'Toggle menu'} aria-expanded={menuOpen} aria-controls="farm-navigation" title={ur?'مینو':'Menu'}>{<Menu size={19}/>}</button>
-  <Brand href={`/dashboard${selected?`?farm=${selected}`:''}`}/>
+  <Brand href={`/dashboard${selected?`?farm=${selected}`:''}`} onClick={onDashboard}/>
   <div className="global-search">
     <Search size={16}/>
     <input value={query} onChange={e=>setQuery(e.target.value)} onFocus={()=>query.trim().length>=2&&setShowResults(true)} placeholder={ur?'دنیا بھر میں تلاش کریں (جانور)':'Search animals across farms…'} aria-label={ur?'تلاش':'Search'}/>

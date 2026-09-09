@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {api} from './api';
-import SearchSelect from './search-select';
+import SearchSelect from './search-select-v2';
 export default function DropdownSettings({base,readOnly}:{base:string;readOnly:boolean}){
  const [rows,setRows]=useState<any[]>([]),[key,setKey]=useState(''),[extra,setExtra]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  useEffect(()=>{api(base+'/dropdowns').then(setRows).catch(e=>setError(e.message))},[base]);
