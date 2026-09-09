@@ -4,6 +4,7 @@ import {useCallback,useEffect,useMemo,useState} from 'react';
 import {api} from './api';
 import SearchSelect from './search-select-v2';
 import TaskFollowups from './task-followups-v2';
+import {formatDate} from './date-format';
 type EventRow={id:string;date:string;title:string;type:string;priority?:string;status?:string};
 type StaffRow={id:string;name:string;position?:string};
 type View='today'|'week'|'month'|'year';
@@ -17,7 +18,7 @@ export default function FarmCalendarRedesign({base,ur}:{base:string;ur:boolean})
  function move(delta:number){const d=new Date(anchor);view==='year'?d.setFullYear(d.getFullYear()+delta):view==='month'?d.setMonth(d.getMonth()+delta):d.setDate(d.getDate()+delta*(view==='week'?7:1));setAnchor(d)}
  async function update(task:EventRow,date:string,extra:Partial<EventRow>={}){if(!canEdit||task.type!=='Task')return;setBusy(true);setError('');try{await api(base+'/calendar/tasks/'+task.id,{method:'PATCH',body:JSON.stringify({date,title:extra.title,priority:extra.priority,status:extra.status})});setEditing(null);await load()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function createTask(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');const form=Object.fromEntries(new FormData(e.currentTarget));try{await api(base+'/records/tasks',{method:'POST',body:JSON.stringify(form)});setCreating(false);await load()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- const periodLabel=view==='today'?anchor.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}):view==='week'?`${range[0].toLocaleDateString()} – ${range[1].toLocaleDateString()}`:view==='year'?String(anchor.getFullYear()):anchor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+ const periodLabel=view==='today'?formatDate(iso(anchor)):view==='week'?`${formatDate(iso(range[0]))} – ${formatDate(iso(range[1]))}`:view==='year'?String(anchor.getFullYear()):anchor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
  const names:Record<View,[string,string]>={today:['Today','آج'],week:['Week','ہفتہ'],month:['Month','مہینہ'],year:['Year','سال']};
  const eventCard=(item:EventRow)=><button key={item.type+item.id} type="button" draggable={canEdit&&item.type==='Task'} onDragStart={e=>e.dataTransfer.setData('text/task-id',item.id)} onClick={()=>item.type==='Task'&&canEdit&&setEditing(item)} className={`calendar-event ${item.type.toLowerCase()}${item.priority?` priority-${item.priority.toLowerCase()}`:''}${item.status?` status-${item.status.toLowerCase().replaceAll(' ','-')}`:''}`}>{item.type==='Task'&&canEdit&&<GripVertical size={13}/>}<span>{item.title}</span><small>{item.type}</small></button>;
  return <div className="app-view calendar-page">
