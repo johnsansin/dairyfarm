@@ -20,7 +20,7 @@ app.use((req,res,next)=>{
  if (!['GET','HEAD','OPTIONS'].includes(req.method) && req.headers.origin !== origin) {res.status(403).json({error:'Untrusted request origin'});return;}
  next();
 });
-const cookie = {httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax' as const,path:'/'};
+const cookie = {httpOnly:true,secure:process.env.SESSION_COOKIE_SECURE==='true',sameSite:'lax' as const,path:'/'};
 const digest=(token:string)=>createHash('sha256').update(token).digest('hex');
 const slugify=(value:string)=>value.normalize('NFKD').toLowerCase().replace(/[^a-z0-9\s-]/g,' ').trim().replace(/[\s_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,48)||'workspace';
 async function session(res:Response,userId:string){
