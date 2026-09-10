@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+test('responses include a content security policy',async({request})=>{ const response=await request.get('/'); const policy=response.headers()['content-security-policy']; expect(policy).toContain("default-src 'self'"); expect(policy).toContain("object-src 'none'"); expect(policy).toContain("frame-ancestors 'none'"); expect(policy).not.toContain('upgrade-insecure-requests'); });
 test('public website, Urdu RTL, mobile layout and links',async({page})=>{
  await page.goto('/');await expect(page.getByRole('heading',{level:1})).toContainText('Better insight');
  await page.getByRole('button',{name:'اردو',exact:true}).first().click();await expect(page.locator('html')).toHaveAttribute('dir','rtl');
