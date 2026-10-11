@@ -10,6 +10,8 @@ import { db } from './db';
 import {operations,DomainError} from './modules/operations';
 import {appRouter} from './modules/app';
 import {taskFollowups} from './modules/task-followups';
+import {adminRouter} from './modules/admin';
+import {addNotification} from './modules/notifications';
 import { registration, login, farmInput, organizationInput } from './validation';
 const app = express();
 app.disable('x-powered-by');
@@ -30,8 +32,9 @@ async function session(res:Response,userId:string){
 async function authenticated(req:Request,res:Response,next:NextFunction){
  const token=req.cookies.dm_session;
  if(typeof token!=='string'){res.status(401).json({error:'Please sign in'});return;}
- const {rows}=await db.query('SELECT u.id,u.name,u.email,u.two_factor_enabled FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()',[digest(token)]);
+ const {rows}=await db.query('SELECT u.id,u.name,u.email,u.two_factor_enabled,u.is_superadmin,u.is_active FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()',[digest(token)]);
  if(!rows[0]){res.status(401).json({error:'Session expired. Please sign in'});return;}
+ if(!rows[0].is_active){res.status(403).json({error:'Your account has been suspended. Contact the administrator.'});return;}
  res.locals.user=rows[0];next();
 }
 async function createOrganization(client:any,userId:string,name:string){
@@ -57,6 +60,7 @@ app.post('/api/v1/auth/register',authLimit,async(req,res)=>{
   catch(e){await client.query('ROLLBACK');client.release();if((e as {code:string}).code==='23505'){res.status(409).json({error:'Unable to create account with this email. Try signing in.'});return;}throw e;}
   await client.query("INSERT INTO sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",[digest(token),id]);
   await createOrganization(client,id,`${input.name}'s workspace`);
+  await addNotification(client,'user.created',id,input.name,{email:input.email});
   await client.query('COMMIT');
  }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
  res.cookie('dm_session',token,{...cookie,maxAge:7*86400000});res.status(201).json({id,name:input.name,email:input.email});
@@ -129,8 +133,9 @@ app.post('/api/v1/farms',authenticated,async(req,res)=>{
  if(!organizationId){organizationId=(await createOrganization(client,res.locals.user.id,'Personal workspace')).id;}
  await client.query('INSERT INTO farms(id,name,city,currency,organization_id,address,email,phone,country,postal_code,contact_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[id,input.name,input.city,input.currency,organizationId,input.address,input.email,input.phone,input.country,input.postal_code,input.contact_name]);
  await client.query("INSERT INTO farm_members(farm_id,user_id,role) VALUES($1,$2,'OWNER')",[id,res.locals.user.id]);
- await client.query("INSERT INTO audit_logs(id,farm_id,user_id,action) VALUES($1,$2,$3,'farm.created')",[randomUUID(),id,res.locals.user.id]);
- await client.query('COMMIT');res.status(201).json({id,...input,organization_id:organizationId,role:'OWNER',version:1});
+await client.query("INSERT INTO audit_logs(id,farm_id,user_id,action) VALUES($1,$2,$3,'farm.created')",[randomUUID(),id,res.locals.user.id]);
+  await addNotification(client,'farm.created',id,input.name,{city:input.city||'',user_id:res.locals.user.id});
+  await client.query('COMMIT');res.status(201).json({id,...input,organization_id:organizationId,role:'OWNER',version:1});
  }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 });
 app.put('/api/v1/farms/:id',authenticated,async(req,res)=>{
@@ -150,6 +155,7 @@ app.put('/api/v1/farms/:id',authenticated,async(req,res)=>{
   await client.query('COMMIT');res.json({...row,role:member.role});
  }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
 });
+app.use('/api/v1/admin',authenticated,adminRouter);
 app.use('/api/v1/farms/:farmId',authenticated,operations);
 app.use('/api/v1/farms/:farmId',authenticated,appRouter);
 app.use('/api/v1/farms/:farmId',authenticated,taskFollowups);

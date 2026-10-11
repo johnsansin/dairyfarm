@@ -4,7 +4,7 @@ import RecordPhoto from './record-photo';
 import StockControls,{StockUsage,type Usage} from './stock-controls';
 import Reports from './reports';
 import {useEffect,useState,useCallback,useRef} from 'react';
-import {Plus,Search,Pencil,X,Download,LayoutDashboard,Users,Milk,HeartPulse,Leaf,Wallet,ClipboardList,FileText,Settings,Sparkles,Activity,Banknote,ShieldCheck,ArrowLeft,MoreVertical,Trash2,Eye,Scale,Rss,Store,Handshake,Stethoscope,Syringe} from 'lucide-react';
+import {Plus,Search,Pencil,X,Download,LayoutDashboard,Users,Milk,HeartPulse,Leaf,Wallet,ClipboardList,FileText,Settings,Sparkles,Activity,Banknote,ShieldCheck,ArrowLeft,MoreVertical,Trash2,Eye,Scale,Rss,Store,Handshake,Stethoscope,Syringe,Egg} from 'lucide-react';
 import {modules,type Module,type Field} from '../shared/modules';
 import {api} from './api';
 import Accounting from './accounting';
@@ -93,10 +93,10 @@ export default function FarmWorkspace({farm,ur,requestedTab,onTabUsed,onDashboar
  },[menuOpen]);
  useEffect(()=>{if(!menuOpen)return;const close=(e:KeyboardEvent)=>{if(e.key==='Escape')onMenu?.()};document.addEventListener('keydown',close);return()=>document.removeEventListener('keydown',close)},[menuOpen,onMenu]);const base=`/api/v1/farms/${farm.id}`;const module=modules.find(m=>m.key===active);
  useEffect(()=>{if(requestedTab&&requestedTab!==active){setActive(requestedTab);onTabUsed?.();}},[requestedTab]);
- function SideIcon({k}:{k:string}){return k==='animals'?<Users size={17}/>:k==='milk'?<Milk size={17}/>:k==='weights'?<Scale size={17}/>:k==='health'?<Stethoscope size={17}/>:k==='vaccinations'?<Syringe size={17}/>:k==='breeding'?<HeartPulse size={17}/>:k==='tasks'?<ClipboardList size={17}/>:k==='buyers'?<Rss size={17}/>:k==='suppliers'?<Store size={17}/>:k==='staff'?<Users size={17}/>:k==='partners'?<Handshake size={17}/>:k==='inventory'?<Leaf size={17}/>:<ClipboardList size={17}/>;}
+ function SideIcon({k}:{k:string}){return k==='animals'?<Users size={17}/>:k==='milk'?<Milk size={17}/>:k==='weights'?<Scale size={17}/>:k==='eggs'?<Egg size={17}/>:k==='health'?<Stethoscope size={17}/>:k==='vaccinations'?<Syringe size={17}/>:k==='breeding'?<HeartPulse size={17}/>:k==='tasks'?<ClipboardList size={17}/>:k==='buyers'?<Rss size={17}/>:k==='suppliers'?<Store size={17}/>:k==='staff'?<Users size={17}/>:k==='partners'?<Handshake size={17}/>:k==='inventory'?<Leaf size={17}/>:<ClipboardList size={17}/>;}
  const heads:{cap:string|null;se:[string,string,string,string][]}[]=[
   {cap:null,se:[['overview','جائزہ','Overview','dash']]},
-  {cap:ur?'ریوڑ':'HERD',se:[['animals','جانور','Animals','animals'],['milk','دودھ کا ریکارڈ','Milk recording','milk'],['weights','وزن','Weight records','weights']]},
+  {cap:ur?'ریوڑ':'HERD',se:[['animals','جانور','Animals','animals'],['milk','دودھ کا ریکارڈ','Milk recording','milk'],['weights','وزن','Weight records','weights'],['eggs','انڈوں کی پیداوار','Egg production','eggs']]},
   {cap:ur?'صحت':'HEALTH',se:[['health','صحت اور علاج','Health & treatments','health'],['vaccinations','ویکسینیشن','Vaccinations','vaccinations'],['breeding','افزائش','Breeding','breeding']]},
   {cap:ur?'کام اور لوگ':'WORK & PEOPLE',se:[['calendar','کیلنڈر','Calendar','calendar'],['tasks','کام','Tasks','tasks'],['staff','عملہ','Staff','staff']]},
   {cap:ur?'فروخت اور خریداری':'SALES & PURCHASING',se:[['transactions','فروخت اور خریداری','Sales & purchases','transactions'],['buyers','دودھ کے خریدار','Milk buyers','buyers'],['suppliers','سپلائرز','Suppliers','suppliers'],['partners','شراکت دار','Partners','partners']]},

@@ -13,6 +13,8 @@ operations.use(async(req,res,next)=>{
  const farmId=(req.params as Record<string,string>).farmId;
  if(!z.uuid().safeParse(farmId).success)throw new DomainError(404,'Farm not found');
  const member=await accessFor(farmId,res.locals.user.id);if(!member)throw new DomainError(404,'Farm not found');
+ const active=(await db.query('SELECT is_active FROM farms WHERE id=$1',[farmId])).rows[0];
+ if(active&&!active.is_active)throw new DomainError(403,'This farm is currently suspended. Contact the administrator.');
  const parts=req.path.split('/');const module=['records','options','export'].includes(parts[1])?parts[2]:parts[1];
  if(module==='summary'){if(!['animals','milk','vaccinations','tasks'].every(k=>canAccess(member,k)))throw new DomainError(403,'Overview requires access to animals, milk, vaccinations and tasks');}
  else if(!canAccess(member,module==='animal-profitability'?'animals':module,!['GET','HEAD'].includes(req.method)))throw new DomainError(403,'Your role does not permit this action');

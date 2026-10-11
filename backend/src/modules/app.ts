@@ -14,6 +14,7 @@ appRouter.use(async(req,res,next)=>{
  if(!z.uuid().safeParse(farmId).success)throw new DomainError(404,'Farm not found');
  const {rows}=await db.query('SELECT f.*,m.role,m.role_id FROM farms f JOIN farm_members m ON m.farm_id=f.id WHERE f.id=$1 AND m.user_id=$2',[farmId,res.locals.user.id]);
  if(!rows[0])throw new DomainError(404,'Farm not found');
+ if(!rows[0].is_active)throw new DomainError(403,'This farm is currently suspended. Contact the administrator.');
  const member=await accessFor(farmId,res.locals.user.id);if(!member)throw new DomainError(404,'Farm not found');
  const ownNotification=req.method==='POST'&&/^\/notifications\/(read-all|[0-9a-f-]+\/read)$/.test(req.path);
  const delegatedSettings=req.path.startsWith('/settings')&&canAccess(member,'settings',true);

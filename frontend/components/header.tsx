@@ -1,13 +1,13 @@
 'use client';
 import SearchSelect from './search-select-v2';
 import {useEffect,useRef,useState} from 'react';
-import {Bell,LogOut,Search,UserRound,ChevronDown,Building2,Moon,Sun,Menu} from 'lucide-react';
+import {Bell,LogOut,Search,UserRound,ChevronDown,Building2,Moon,Sun,Menu,ShieldCheck} from 'lucide-react';
 import Brand from './brand';
 import {api} from './api';
 interface Farm{id:string;name:string;city:string;currency:string;role:string;organization_name?:string|null;organization_slug?:string|null}
 interface Notification{id:string;type:string;title:string;body:string;link:string;is_read:boolean;created_at:string}
-export default function Header({ur,toggle,dark,toggleDark,user,farms,selected,onSelect,base,busy,onLogout,onProfile,onSettings,onDashboard,menuOpen,onMenu}:{
- ur:boolean;toggle:()=>void;dark:boolean;toggleDark:()=>void;user:{name:string}|null;farms:Farm[];selected:string;onSelect:(v:string)=>void;base:(farmId:string)=>string;busy:boolean;onLogout:()=>void;onProfile:()=>void;onSettings:()=>void;onDashboard:()=>void;menuOpen:boolean;onMenu:()=>void;
+export default function Header({ur,toggle,dark,toggleDark,user,farms,selected,onSelect,base,busy,onLogout,onProfile,onSettings,onDashboard,onAdmin,menuOpen,onMenu}:{
+ ur:boolean;toggle:()=>void;dark:boolean;toggleDark:()=>void;user:{name:string;is_superadmin?:boolean}|null;farms:Farm[];selected:string;onSelect:(v:string)=>void;base:(farmId:string)=>string;busy:boolean;onLogout:()=>void;onProfile:()=>void;onSettings:()=>void;onDashboard:()=>void;onAdmin:()=>void;menuOpen:boolean;onMenu:()=>void;
 }){
  const [query,setQuery]=useState('');const [results,setResults]=useState<{id:string;tag:string;name:string|null|undefined;farmId:string;farmName:string}[]>([]);const [searching,setSearching]=useState(false);const [showResults,setShowResults]=useState(false);
  const [notifOpen,setNotifOpen]=useState(false);const [notifs,setNotifs]=useState<Notification[]>([]);const [unread,setUnread]=useState(0);const [loadingNotifs,setLoadingNotifs]=useState(false);
@@ -67,6 +67,7 @@ const [userMenu,setUserMenu]=useState(false);
      {userMenu&&<div className="user-menu-pop">
       <button onClick={()=>{setUserMenu(false);onProfile()}}><UserRound size={15}/>{ur?'پروفائل اور پاس ورڈ':'Profile & password'}</button>
       {settingsAllowed&&<button onClick={()=>{setUserMenu(false);onSettings()}}><Building2 size={15}/>{ur?'ترتیبات':'Settings'}</button>}
+      {user?.is_superadmin&&<button onClick={()=>{setUserMenu(false);onAdmin()}}><ShieldCheck size={15}/>{ur?'ایڈمن پینل':'Admin panel'}</button>}
       <button disabled={busy} onClick={()=>{setUserMenu(false);onLogout()}}><LogOut size={15}/>{ur?'سائن آؤٹ':'Sign out'}</button>
      </div>}
     </div>
