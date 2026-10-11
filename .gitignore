@@ -10,3 +10,6 @@ dist/
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+# Local database exports
+backend/backups/
