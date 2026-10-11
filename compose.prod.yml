@@ -25,6 +25,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 4000
+      WHATSAPP_AUTH_KEY: ${WHATSAPP_AUTH_KEY:-}
       APP_ORIGIN: https://dairy.bizforce-crm.online
       DATABASE_URL: postgresql://dairymonitor:${POSTGRES_PASSWORD}@dairy-db:5432/dairymonitor
     depends_on:

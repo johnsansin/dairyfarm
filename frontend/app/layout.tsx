@@ -12,6 +12,7 @@ import './task-followups.css';
 import './dashboard-polish.css';
 import './dashboard-reference.css';
 import './point-of-sale.css';
+import './whatsapp-settings.css';
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://dairymonitor.online');
 export const metadata: Metadata = {
  metadataBase: siteUrl,

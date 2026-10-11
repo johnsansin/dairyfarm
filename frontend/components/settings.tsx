@@ -2,9 +2,10 @@
 import SearchSelect from './search-select-v2';
 import StaffTeam from './staff-team';
 import DropdownSettings from './dropdown-settings';
+import WhatsAppSettings from './whatsapp-settings';
 const timezones=Array.from(new Set(['UTC','Asia/Karachi',...Intl.supportedValuesOf('timeZone')]));
 import {useEffect,useState,useCallback} from 'react';
-import {Plus,Users2,ShieldCheck,UserPlus,Settings2,Search,ChevronRight,ArrowLeft,ListChecks,Building2,Save,CheckCircle2,Mail,Pencil,X,PlugZap,Send} from 'lucide-react';
+import {Plus,Users2,ShieldCheck,UserPlus,Settings2,Search,ChevronRight,ArrowLeft,ListChecks,Building2,Save,CheckCircle2,Mail,Pencil,X,PlugZap,Send,MessageCircle} from 'lucide-react';
 import {api} from './api';
 import {modules as appModules} from '../shared/modules';
 type Row=Record<string,string|number|boolean|null>;
@@ -15,13 +16,14 @@ const lab=(en:string,urdu:string,ur:boolean)=>ur?urdu:en;
 const modules=[...appModules,{key:'settings',en:'Settings',ur:'ترتیبات',singular:'settings',description:'Farm configuration access.',fields:[]}];
 const permissionModules=modules;
 const defaultFarmSettings={timezone:'Asia/Karachi',language:'English + Urdu',briefingTime:'06:00',notificationChannel:'Dashboard',offlineMode:'Enabled',notes:'',smtpHost:'',smtpPort:'587',smtpSecurity:'STARTTLS',smtpUsername:'',smtpPassword:'',smtpFromName:'DairyMonitor',smtpFromEmail:'',smtpEnabled:'Disabled'};
-export default function AppSettings({base,ur,readOnly,management}:{base:string;ur:boolean;readOnly:boolean;management?:React.ReactNode}){
- type SettingsTab='roles'|'team'|'farm'|'workspace'|'dropdowns';
+export default function AppSettings({base,ur,readOnly,management,isOwner}:{base:string;ur:boolean;readOnly:boolean;management?:React.ReactNode;isOwner:boolean}){
+ type SettingsTab='roles'|'team'|'farm'|'workspace'|'dropdowns'|'whatsapp';
  const [tab,setTab]=useState<SettingsTab|null>(null);const [search,setSearch]=useState('');
  const sections:[SettingsTab,typeof ShieldCheck,string,string][]=[
   ['team',Users2,ur?'صارفین':'Users',ur?'فارم کے صارفین، عملے کے اکاؤنٹس اور تفویض کردہ کردار سنبھالیں۔':'Manage farm users, staff accounts, assigned roles, and access status.'],
   ['roles',ShieldCheck,ur?'کردار اور اجازتیں':'Roles & permissions',ur?'فارم کے ہر حصے کے لیے حسب ضرورت کردار اور رسائی متعین کریں۔':'Create reusable roles and control read or write access for every farm module.'],
   ['farm',Settings2,ur?'فارم کی ترجیحات':'Farm preferences',ur?'زبان، ٹائم زون، اطلاعات اور ای میل کی ترسیل ترتیب دیں۔':'Configure language, time zone, notifications, and email delivery.'],
+  ['whatsapp',MessageCircle,ur?'واٹس ایپ':'WhatsApp',ur?'اپنے فارم کا واٹس ایپ نمبر کیو آر کوڈ کے ذریعے منسلک کریں۔':'Link your own WhatsApp number with a QR code and manage this farm’s connection.'],
   ['dropdowns',ListChecks,ur?'ایپ ڈراپ ڈاؤنز':'Application dropdowns',ur?'ریکارڈ فارم میں استعمال ہونے والے اضافی اختیارات سنبھالیں۔':'Manage additional choices used throughout record forms.'],
   ...(management?[['workspace',Building2,ur?'ڈیری فارم':'Dairy farm',ur?'فارم اور تنظیم کی بنیادی معلومات سنبھالیں۔':'Manage the farm and organization details.'] as [SettingsTab,typeof ShieldCheck,string,string]]:[])
  ];
@@ -38,7 +40,7 @@ export default function AppSettings({base,ur,readOnly,management}:{base:string;u
  return <div className="app-view">
   <button type="button" className="settings-back" onClick={()=>setTab(null)}><span><ArrowLeft size={15}/></span><strong>{ur?'تمام ترتیبات':'All settings'}</strong><small>{ur?'کنٹرول سینٹر پر واپس':'Back to control center'}</small></button>
   <div className="settings-section-heading"><span className={`settings-card-icon settings-card-${tab}`}><CurrentIcon size={22}/></span><div><h2>{current[2]}</h2><p>{current[3]}</p></div></div>
-  {tab==='dropdowns'?<DropdownSettings base={base} readOnly={readOnly}/>:tab==='workspace'?management:tab==='roles'?<RolesView base={base} ur={ur} readOnly={readOnly}/>:tab==='team'?<TeamView base={base} ur={ur} readOnly={readOnly}/>:<FarmSettingsView base={base} ur={ur} readOnly={readOnly}/>} 
+  {tab==='whatsapp'?<WhatsAppSettings base={base} ur={ur} isOwner={isOwner}/>:tab==='dropdowns'?<DropdownSettings base={base} readOnly={readOnly}/>:tab==='workspace'?management:tab==='roles'?<RolesView base={base} ur={ur} readOnly={readOnly}/>:tab==='team'?<TeamView base={base} ur={ur} readOnly={readOnly}/>:<FarmSettingsView base={base} ur={ur} readOnly={readOnly}/>}
  </div>;
 }
 function RolesView({base,ur,readOnly}:{base:string;ur:boolean;readOnly:boolean}){
