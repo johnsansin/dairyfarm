@@ -6,6 +6,7 @@ import {db} from '../db';
 import {DomainError} from './operations';
 import {getModule} from '../../shared/modules';
 import {workflows} from './workflows';
+import {posRouter} from './pos';
 import {accessFor,canAccess} from './access';
 export const appRouter=Router({mergeParams:true});
 
@@ -22,6 +23,7 @@ appRouter.use(async(req,res,next)=>{
  res.locals.farm={id:rows[0].id,...member};next();
 });
 
+appRouter.use('/pos',posRouter);
 appRouter.use(workflows);
 // ---- Notifications ----
 appRouter.get('/notifications',async(req,res)=>{

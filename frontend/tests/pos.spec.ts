@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+
+test('POS product setup, cash sale, inventory, price history, transfer and thermal receipts',async({page,baseURL})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const headers={Origin:new URL(baseURL!).origin};
+ expect((await page.request.post('/api/v1/auth/register',{headers,data:{name:'POS Browser Owner',email:`pos-ui-${Date.now()}@example.invalid`,password:'POS-browser-123'}})).status()).toBe(201);
+ const farm=await (await page.request.post('/api/v1/farms',{headers,data:{name:'Fresh Dairy POS',city:'Lahore',currency:'PKR'}})).json();const base='/api/v1/farms/'+farm.id;
+ await page.goto('/dashboard?farm='+farm.id+'&tab=pos');await expect(page.getByRole('heading',{name:'Point of sale',exact:true})).toBeVisible();
+ await page.getByRole('tab',{name:'Products & prices'}).click();await page.getByRole('button',{name:'Add product',exact:true}).click();
+ const editor=page.getByRole('dialog',{name:'Add product'});await editor.getByLabel('Product name').fill('Fresh milk');await editor.getByLabel('Selling price').fill('200');await editor.getByLabel('Opening stock').fill('10');await editor.getByLabel('Stock cost').fill('100');await editor.getByRole('button',{name:'Save product'}).click();await expect(editor).toBeHidden();
+ await page.getByRole('tab',{name:'New sale'}).click();await expect(page.getByLabel('Customer',{exact:true})).toHaveValue('');await expect(page.getByRole('radio',{name:'Cash',exact:true})).toBeChecked();
+ await page.getByRole('button',{name:'Add Fresh milk',exact:true}).click();await page.getByLabel('Quantity for Fresh milk').fill('1.5');await page.getByLabel('Cash received').fill('500');await page.getByRole('button',{name:'Complete sale',exact:true}).click();
+ const receipt=page.getByRole('dialog',{name:'Sale receipt'});await expect(receipt).toContainText('300.00');await expect(receipt).toContainText('Walk-in customer');await expect(receipt).toContainText('Change: 200.00');
+ await receipt.getByLabel('Thermal paper width').selectOption('58');const popupPromise=page.waitForEvent('popup');await receipt.getByRole('button',{name:'Print receipt'}).click();const popup=await popupPromise;await expect(popup.locator('body')).toContainText('Fresh milk');await expect(popup.locator('body')).toContainText('PAID');expect(await popup.locator('style').allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining('size:58mm')]));await popup.close();
+ await receipt.getByRole('button',{name:'Close',exact:true}).click();let products=await (await page.request.get(base+'/pos/products')).json();expect(products[0].stock_quantity).toBe('8.500');
+ await page.getByRole('tab',{name:'Products & prices'}).click();await page.getByRole('button',{name:'Edit price / status'}).click();const priceEditor=page.getByRole('dialog',{name:'Edit selling price'});await priceEditor.getByLabel('Selling price').fill('250');await priceEditor.getByRole('button',{name:'Save product'}).click();await expect(priceEditor).toBeHidden();
+ await page.getByRole('tab',{name:'Receipts',exact:true}).click();await page.getByRole('button',{name:'View / print'}).click();await expect(receipt).toContainText('1.5 litre × 200.00');await receipt.getByRole('button',{name:'Close',exact:true}).click();
+ await page.getByRole('tab',{name:'New sale'}).click();await page.getByRole('button',{name:'Add Fresh milk',exact:true}).click();await page.getByRole('radio',{name:'Online transfer'}).check();await page.getByLabel('Transfer reference').fill('BANK-UI-123');await page.getByRole('button',{name:'Complete sale',exact:true}).click();await expect(receipt).toContainText('250.00');await expect(receipt).toContainText('Online transfer');await expect(receipt).toContainText('BANK-UI-123');await receipt.getByRole('button',{name:'Close',exact:true}).click();
+ products=await (await page.request.get(base+'/pos/products')).json();expect(products[0].stock_quantity).toBe('7.500');await expect(page.getByRole('radio',{name:'Cash',exact:true})).toBeChecked();
+ await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'test-results/pos-mobile.png',fullPage:true});await page.setViewportSize({width:1440,height:1000});await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:'test-results/pos-desktop.png',fullPage:true});expect(errors).toEqual([]);
+});
+
+test('retry after a lost checkout response retrieves the sale without another stock deduction',async({page,baseURL})=>{
+ const headers={Origin:new URL(baseURL!).origin};await page.request.post('/api/v1/auth/register',{headers,data:{name:'POS Retry Owner',email:`pos-retry-${Date.now()}@example.invalid`,password:'POS-browser-123'}});
+ const farm=await (await page.request.post('/api/v1/farms',{headers,data:{name:'Retry Farm',city:'Lahore',currency:'PKR'}})).json(),base='/api/v1/farms/'+farm.id;
+ await page.request.post(base+'/pos/products',{headers,data:{name:'Yogurt',unit:'kg',selling_price:'100',opening_stock:'5'}});
+ await page.goto('/dashboard?farm='+farm.id+'&tab=pos');await page.getByRole('button',{name:'Add Yogurt',exact:true}).click();
+ await page.route('**/pos/sales',async route=>{if(route.request().method()==='POST'){await route.fetch();await route.abort()}else await route.continue()},{times:1});
+ await page.getByRole('button',{name:'Complete sale',exact:true}).click();await expect(page.getByRole('button',{name:'Retry checkout'})).toBeEnabled();
+ await page.reload();await expect(page.getByRole('button',{name:'Retry checkout'})).toBeEnabled();await page.getByRole('button',{name:'Retry checkout'}).click();await expect(page.getByRole('dialog',{name:'Sale receipt'})).toBeVisible();
+ expect((await (await page.request.get(base+'/pos/products')).json())[0].stock_quantity).toBe('4.000');expect(await (await page.request.get(base+'/pos/sales')).json()).toHaveLength(1);
+});
