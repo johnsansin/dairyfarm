@@ -2,8 +2,7 @@ import {Router,type NextFunction,type Request,type Response} from 'express';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import net from 'node:net';
-import path from 'node:path';
-import {mkdirSync,createWriteStream,readdirSync,statSync} from 'node:fs';
+import {backupRouter} from './backups';
 import {db} from '../db';
 import {DomainError} from './operations';
 
@@ -205,60 +204,7 @@ adminRouter.post('/settings/smtp/test',async(req,res)=>{
   res.json({ok:true,banner:r.banner});
 });
 
-function csvValue(v:unknown):string{
-  if(v===null||v===undefined)return '';
-  let s:string;
-  if(v instanceof Date)s=v.toISOString();
-  else if(typeof v==='object')s=JSON.stringify(v);
-  else s=String(v);
-  return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
-}
-
-const backupDir=path.resolve(process.cwd(),'backups');
-
-adminRouter.post('/backup',async(_req,res)=>{
-  mkdirSync(backupDir,{recursive:true});
-  const {rows:tables}=await db.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name`);
-  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-  const file=path.join(backupDir,`dairymonitor_${stamp}.sql`);
-  let totalRows=0;
-  const write=new Promise<void>((resolve,reject)=>{
-    const out=createWriteStream(file);out.on('error',reject);
-    out.write('-- DairyMonitor database backup\n');
-    out.write(`-- Generated: ${new Date().toISOString()}\n-- Database: ${new URL(process.env.DATABASE_URL??'').pathname.replace('/','')}\n`);
-    (async()=>{
-      for(const t of tables){
-        const name=t.table_name;
-        const {rows:cols}=await db.query(`SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=$1 ORDER BY ordinal_position`,[name]);
-        const colList=cols.map((c:Record<string,string>)=>`"${c.column_name}"`).join(', ');
-        const data=(await db.query(`SELECT * FROM "${name}"`)).rows;
-        totalRows+=data.length;
-        out.write(`\n-- Table: ${name} (${data.length} rows)\n`);
-        out.write(`COPY "${name}" (${colList}) FROM stdin WITH (FORMAT csv);\n`);
-        for(const row of data){out.write(cols.map((c:Record<string,string>)=>csvValue(row[c.column_name])).join(',')+'\n');}
-        out.write('\\.\n');
-      }
-      out.end('-- End of backup\n',resolve);
-    })().catch(reject);
-  });
-  await write;
-  await adminAudit(res.locals.user.id,'backup.created','backup',null,{file:path.basename(file),tables:tables.length,rows:totalRows});
-  res.json({ok:true,file:path.basename(file),tables:tables.length,rows:totalRows,size:statSync(file).size});
-});
-
-adminRouter.get('/backups',async(_req,res)=>{
-  mkdirSync(backupDir,{recursive:true});
-  const files=readdirSync(backupDir).filter(f=>/^dairymonitor_.+\.sql$/.test(f))
-    .map(f=>{const st=statSync(path.join(backupDir,f));return {file:f,size:st.size,created:st.mtime.toISOString()};})
-    .sort((a,b)=>b.created.localeCompare(a.created));
-  res.json({files});
-});
-
-adminRouter.get('/backups/:file',async(req,res)=>{
-  const file=z.string().regex(/^dairymonitor_[A-Za-z0-9.-]+\.sql$/).parse(req.params.file);
-  const p=path.join(backupDir,file);
-  res.download(p,file,{headers:{'content-type':'application/sql'}});
-});
+adminRouter.use(backupRouter);
 
 adminRouter.get('/activity',async(req,res)=>{
   const limit=z.coerce.number().int().min(1).max(100).default(20).parse(req.query.limit);

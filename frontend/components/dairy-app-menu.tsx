@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Banknote,CalendarDays,ChevronRight,ClipboardList,FileText,Handshake,HeartPulse,LayoutDashboard,Leaf,Milk,Rss,Scale,Settings,ShieldCheck,Star,Stethoscope,Store,Syringe,Users} from 'lucide-react';
 
 export type DairyMenuGroup={label:string;items:{key:string;label:string;icon:string}[]};
-const icons:Record<string,React.ElementType>={dash:LayoutDashboard,calendar:CalendarDays,animals:Users,milk:Milk,weights:Scale,health:Stethoscope,vaccinations:Syringe,breeding:HeartPulse,tasks:ClipboardList,staff:Users,buyers:Rss,suppliers:Store,partners:Handshake,inventory:Leaf,acc:Banknote,reports:FileText,settings:ShieldCheck,audit:Settings};
+const icons:Record<string,React.ElementType>={pos:Store,dash:LayoutDashboard,calendar:CalendarDays,animals:Users,milk:Milk,weights:Scale,health:Stethoscope,vaccinations:Syringe,breeding:HeartPulse,tasks:ClipboardList,staff:Users,buyers:Rss,suppliers:Store,partners:Handshake,inventory:Leaf,acc:Banknote,reports:FileText,settings:ShieldCheck,audit:Settings};
 
 export default function DairyAppMenu({groups,active,onSelect,ur}:{groups:DairyMenuGroup[];active:string;onSelect:(key:string)=>void;ur:boolean}){
  const activeGroup=groups.find(group=>group.items.some(item=>item.key===active))?.label||groups[0]?.label||'';

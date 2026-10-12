@@ -2,13 +2,13 @@
 import {Fragment,useCallback,useEffect,useState,type Dispatch,type SetStateAction} from 'react';
 import {useRouter} from 'next/navigation';
 import {ArrowLeft,Building2,ChevronDown,ChevronLeft,ChevronRight,ChevronRight as ExpandIcon,LayoutDashboard,RefreshCcw,Search,ShieldCheck,Store,Users,Bell,Database,Settings,LogOut,Activity,XCircle,CheckCircle2,Mail,UserRound,X} from 'lucide-react';
+import PlatformBackups from '../../components/platform-backups';
 import {api} from '../../components/api';
 import {useLanguage} from '../../components/language';
 import './superadmin.css';
 type Stat=Record<string,string|number>;
 type Row=Record<string,any>;
 function fmt(v:string|number|undefined,ur:boolean){if(v===undefined||v===null||v==='')return '—';const s=String(v);const d=s.slice(0,10);return /^\d{4}-\d{2}-\d{2}/.test(s)?(ur?d:d):s}
-function formatSize(bytes:number){if(bytes<1024)return `${bytes} B`;if(bytes<1048576)return `${(bytes/1024).toFixed(1)} KB`;return `${(bytes/1048576).toFixed(1)} MB`}
 function timeAgo(dateStr:string,ur:boolean){const diff=Date.now()-new Date(dateStr).getTime();if(diff<60000)return ur?'ابھی':'Just now';if(diff<3600000){const m=Math.floor(diff/60000);return ur?`${m} من پہلے`:`${m}m ago`;}if(diff<86400000){const h=Math.floor(diff/3600000);return ur?`${h} گھنٹے پہلے`:`${h}h ago`;}return new Date(dateStr).toLocaleDateString();}
 function actionLabel(action:string,ur:boolean){const m:Record<string,string>={'user.suspended':ur?'صارف معطل':'User suspended','user.activated':ur?'صارف فعال':'User activated','farm.suspended':ur?'فارم معطل':'Farm suspended','farm.activated':ur?'فارم فعال':'Farm activated','admin.granted':ur?'ایڈمن دیا گیا':'Admin granted','admin.revoked':ur?'ایڈمن واپس':'Admin revoked','backup.created':ur?'بیک اپ تیار':'Backup created','settings.updated':ur?'ترتیبات اپ ڈیٹ':'Settings updated','settings.smtp.test':ur?'SMTP ٹیسٹ':'SMTP tested'};return m[action]??action;}
 type Tk='farms'|'organizations'|'users';
@@ -55,12 +55,9 @@ export default function SuperAdmin(){
  const [profBusy,setProfBusy]=useState(false);
 
  const [smtp,setSmtp]=useState<{host:string;port:number;secure:boolean;user:string;password:string;fromEmail:string;fromName:string;passwordSet:boolean}>({host:'',port:587,secure:false,user:'',password:'',fromEmail:'',fromName:'DairyMonitor',passwordSet:false});
- const [backup,setBackup]=useState<{enabled:boolean;hour:number;keep:number}>({enabled:false,hour:3,keep:30});
- const [backupList,setBackupList]=useState<{file:string;size:number;created:string}[]>([]);
  const [settingsLoaded,setSettingsLoaded]=useState(false);
  const [settingsSaving,setSettingsSaving]=useState(false);
  const [smtpTesting,setSmtpTesting]=useState(false);
- const [backupCreating,setBackupCreating]=useState(false);
 
  useEffect(()=>{async function boot(){try{const me=await api('/api/v1/auth/me');setMe(me);if(!me.is_superadmin){setStatus('denied');return;}setStatus('ready')}catch(e){if((e as Error).message==='Please sign in'){setStatus('guest');setTimeout(()=>router.replace('/signin?next=/superadmin'),600)}else{setStatus('denied')}}}void boot()},[router]);
  const loadStats=useCallback(async()=>{try{setStats(await api('/api/v1/admin/stats'))}catch(e){setMessage({kind:'err',text:(e as Error).message})}},[]);
@@ -79,8 +76,7 @@ export default function SuperAdmin(){
  const actNew=actSeen?notifs.rows.filter(r=>new Date(r.created_at)>new Date(actSeen)).length:notifs.rows.length;
  function markActSeen(){const t=new Date().toISOString();setActSeen(t);try{localStorage.setItem('dm_admin_act_seen',t)}catch{}}
 
- useEffect(()=>{if(status==='ready'&&!settingsLoaded){fetch('/api/v1/admin/settings',{credentials:'include'}).then(r=>r.ok?r.json():null).then(d=>{if(d){setSmtp(s=>({...s,...d.smtp}));setBackup(b=>({...b,...d.backup}));setSettingsLoaded(true)}}).catch(()=>{})}},[status,settingsLoaded]);
- useEffect(()=>{if(settingsLoaded&&tab==='settings'){fetch('/api/v1/admin/backups',{credentials:'include'}).then(r=>r.ok?r.json():{files:[]}).then(d=>setBackupList(d.files??[])).catch(()=>setBackupList([]))}},[settingsLoaded,tab]);
+ useEffect(()=>{if(status==='ready'&&!settingsLoaded){fetch('/api/v1/admin/settings',{credentials:'include'}).then(r=>r.ok?r.json():null).then(d=>{if(d){setSmtp(s=>({...s,...d.smtp}));setSettingsLoaded(true)}}).catch(()=>{})}},[status,settingsLoaded]);
 
  async function act(path:string,body:Record<string,unknown>,okMsg:string){setMessage(null);try{await api(path,{method:'POST',body:JSON.stringify(body)});setMessage({kind:'ok',text:okMsg});}catch(e){setMessage({kind:'err',text:(e as Error).message});return;}if(tab==='farms')void loadFarms();else if(tab==='organizations')void loadOrgs();else if(tab==='users')void loadUsers();else void loadStats();}
  async function saveProfile(e:React.FormEvent){e.preventDefault();setProfMsg(null);setProfBusy(true);try{await api('/api/v1/auth/profile',{method:'PUT',body:JSON.stringify({name:profName})});if(profNew)await api('/api/v1/auth/change-password',{method:'POST',body:JSON.stringify({current_password:profCur,new_password:profNew})});setMe(m=>m?{...m,name:profName}:m);setProfileOpen(false);setMessage({kind:'ok',text:L('Profile updated.','پروفائل اپ ڈیٹ ہو گئی۔')});}catch(e){setProfMsg({kind:'err',text:(e as Error).message})}finally{setProfBusy(false)}}
@@ -199,21 +195,7 @@ export default function SuperAdmin(){
         <button className="button small secondary" disabled={smtpTesting} onClick={async()=>{setSmtpTesting(true);setMessage(null);try{const r=await api('/api/v1/admin/settings/smtp/test',{method:'POST'});setMessage({kind:'ok',text:`${L('SMTP connected','SMTP کنیکٹ ہو گیا')}: ${r.banner}`})}catch(e){setMessage({kind:'err',text:(e as Error).message})}finally{setSmtpTesting(false)}}}>{smtpTesting?L('Testing…','ٹیسٹ ہو رہا ہے…'):L('Test connection','کنکشن ٹیسٹ کریں')}</button>
        </div>
       </section>
-      <section className="admin-settings-section">
-       <h3><Database size={15}/> {L('Database backup','ڈیٹابیس بیک اپ')}</h3>
-       <p className="admin-settings-desc">{L('Scheduled full-database backup with configurable retention.','قابلوار مکمل ڈیٹابیس بیک اپ۔')}</p>
-       <div className="admin-settings-grid">
-        <label className="admin-settings-field"><span>{L('Enabled','فعال')}</span><select value={backup.enabled?'1':'0'} onChange={e=>setBackup(b=>({...b,enabled:e.target.value==='1'}))}><option value="0">{L('Disabled','غیر فعال')}</option><option value="1">{L('Enabled','فعال')}</option></select></label>
-        <label className="admin-settings-field"><span>{L('Hour (PKT)','گھنٹہ')} (PKT)</span><input type="number" min={0} max={23} value={backup.hour} onChange={e=>setBackup(b=>({...b,hour:Number(e.target.value)}))}/></label>
-        <label className="admin-settings-field"><span>{L('Keep days','رکھیں دن')}</span><input type="number" min={1} max={90} value={backup.keep} onChange={e=>setBackup(b=>({...b,keep:Number(e.target.value)}))}/></label>
-       </div>
-       <div className="admin-settings-actions">
-        <button className="button small" disabled={settingsSaving} onClick={async()=>{setSettingsSaving(true);try{await api('/api/v1/admin/settings',{method:'POST',body:JSON.stringify({section:'backup',value:backup})});setMessage({kind:'ok',text:L('Backup settings saved','بیک اپ ترتیبات محفوظ ہو گئیں')})}catch(e){setMessage({kind:'err',text:(e as Error).message})}finally{setSettingsSaving(false)}}}>{settingsSaving?L('Saving…','محفوظ ہو رہا ہے…'):L('Save backup settings','بیک اپ ترتیبات محفوظ کریں')}</button>
-        <button className="button small secondary" disabled={backupCreating} onClick={async()=>{setBackupCreating(true);setMessage(null);try{const r=await api('/api/v1/admin/backup',{method:'POST'});setMessage({kind:'ok',text:`${L('Backup created','بیک اپ تیار')}: ${r.file} (${formatSize(r.size)}, ${r.rows} ${L('rows','قطعنے')})`});fetch('/api/v1/admin/backups',{credentials:'include'}).then(r=>r.ok?r.json():{files:[]}).then(d=>setBackupList(d.files??[])).catch(()=>{})}catch(e){setMessage({kind:'err',text:(e as Error).message})}finally{setBackupCreating(false)}}}>{backupCreating?L('Backing up…','بیک اپ ہو رہا ہے…'):L('Create backup now','ابھی بیک اپ بنائیں')}</button>
-       </div>
-       <div className="admin-settings-list-head"><span>{L('Existing backups','موجودہ بیک اپس')}</span></div>
-       {backupList.length===0?<div className="sub-empty">{L('No backups yet.','ابھی تک کوئی بیک اپ نہیں۔')}</div>:<div className="records-table-wrap sub"><table className="records-table"><thead><tr><th>{L('File','فائل')}</th><th className="num">{L('Size','حجم')}</th><th>{L('Created','تاریخ')}</th><th></th></tr></thead><tbody>{backupList.map(b=><tr key={b.file}><td><strong>{b.file}</strong></td><td className="num">{formatSize(b.size)}</td><td>{timeAgo(b.created,ur)}</td><td className="actions-c"><button className="row-action" onClick={async()=>{try{const r=await fetch(`/api/v1/admin/backups/${encodeURIComponent(b.file)}`,{credentials:'include'});const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=b.file;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}catch{}}}>{L('Download','ڈاؤن لوڈ')}</button></td></tr>)}</tbody></table></div>}
-      </section>
+      <PlatformBackups ur={ur}/>
      </div>
     </>}
    </main>

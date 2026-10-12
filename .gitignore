@@ -13,3 +13,6 @@ playwright-report/
 
 # Local database exports
 backend/backups/
+
+# Local PostgreSQL backup tools
+backend/.tools/

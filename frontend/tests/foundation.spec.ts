@@ -14,7 +14,7 @@ test('public website, Urdu RTL, mobile layout and links',async({page})=>{
 });
 test('registration, farm creation, login, logout and tenant isolation',async({page,playwright,baseURL})=>{
  const email=`owner-${Date.now()}@example.invalid`;const password='Test-password-12345';
- await page.goto('/register');await page.getByLabel('Full name').fill('Test Farm Owner');await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill(password);await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Create account',exact:true}).click();await expect(page).toHaveURL(/dashboard/);
+ await page.goto('/register');await page.getByLabel('Full name').fill('Test Farm Owner');await page.getByLabel('Email address').fill(email);await page.locator('input[name="password"]').fill(password);await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Create account',exact:true}).click();await expect(page).toHaveURL(/dashboard/);
  await page.getByLabel('Farm name',{exact:true}).fill('Integration Farm');await page.getByLabel('City / location').fill('Lahore');await page.getByRole('button',{name:'Create farm',exact:true}).click();await expect(page.getByRole('combobox',{name:'Active farm'})).toContainText('Integration Farm · Lahore');
  const farms=await (await page.request.get('/api/v1/farms')).json();expect(farms).toHaveLength(1);
  const other=await playwright.request.newContext({baseURL,extraHTTPHeaders:{Origin:new URL(baseURL!).origin}});
@@ -26,5 +26,5 @@ test('registration, farm creation, login, logout and tenant isolation',async({pa
  await page.getByRole('button',{name:'User menu',exact:true}).click();
  await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page).toHaveURL(/signin/);
  expect((await page.request.get('/api/v1/farms')).status()).toBe(401);
- await page.getByLabel('Email address').fill(email);await page.getByRole('button',{name:'Next',exact:true}).click();await page.getByLabel('Password',{exact:true}).fill(password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/dashboard/);await expect(page.getByRole('combobox',{name:'Active farm'})).toContainText('Integration Farm · Lahore');
+ await page.getByLabel('Email address').fill(email);await page.getByRole('button',{name:'Next',exact:true}).click();await page.locator('input[name="password"]').fill(password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/dashboard/);await expect(page.getByRole('combobox',{name:'Active farm'})).toContainText('Integration Farm · Lahore');
 });
