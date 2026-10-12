@@ -11,8 +11,9 @@ const pool=new pg.Pool({connectionString:url});const key=randomBytes(32);let coo
 async function api(path:string,method='GET',data?:unknown,expected=200){const r=await fetch(base+path,{method,headers:{Origin:origin!,'Content-Type':'application/json',Cookie:cookie},body:data===undefined?undefined:JSON.stringify(data)});const body=await r.json() as {id:string;status:string;qr_data_url:string|null;last_error:string};assert.equal(r.status,expected,path+': '+JSON.stringify(body));return {body,cookie:r.headers.get('set-cookie')?.split(';')[0]}}
 async function owner(){const r=await api('/auth/register','POST',{name:'WhatsApp Test Owner',email:`wa-${randomUUID()}@example.invalid`,password:'WhatsApp-test-123'},201);cookie=r.cookie!;const farm=(await api('/farms','POST',{name:'WhatsApp Test Farm',city:'Lahore',currency:'PKR'},201)).body;return {user:r.body,farm,cookie}}
 async function until(check:()=>Promise<boolean>,message:string){for(let i=0;i<100;i++){if(await check())return;await new Promise(resolve=>setTimeout(resolve,30))}throw new Error(message)}
+const sentMessages:{socket:number;jid:string;text:string}[]=[];
 const sockets:{ev:EventEmitter;auth:AuthenticationState;user:{id:string;name:string};ended:boolean;loggedOut:boolean}[]=[];
-async function fake(auth:AuthenticationState){const item={ev:new EventEmitter(),auth,user:{id:'923001234567:1@s.whatsapp.net',name:'Test Dairy'},ended:false,loggedOut:false};sockets.push(item);return {...item,end:async()=>{item.ended=true},logout:async()=>{item.loggedOut=true}} as unknown as WASocket}
+async function fake(auth:AuthenticationState){const item={ev:new EventEmitter(),auth,user:{id:'923001234567:1@s.whatsapp.net',name:'Test Dairy'},ended:false,loggedOut:false};sockets.push(item);return {...item,onWhatsApp:async(phone:string)=>[{exists:true,jid:phone+'@s.whatsapp.net'}],sendMessage:async(jid:string,content:{text:string})=>{sentMessages.push({socket:sockets.indexOf(item),jid,text:content.text});return {key:{id:'mock-message'}}},end:async()=>{item.ended=true},logout:async()=>{item.loggedOut=true}} as unknown as WASocket}
 async function main(){let service=new WhatsAppService(pool,fake,()=>key),otherService=new WhatsAppService(pool,fake,()=>key);
 try{
  const a=await owner(),b=await owner();cookie=a.cookie;const path='/farms/'+a.farm.id+'/settings/whatsapp';
@@ -29,6 +30,9 @@ try{
  const credentials=(await pool.query('SELECT farm_id,encrypted_value FROM whatsapp_auth')).rows;assert.ok(credentials.length>=2);assert.ok(credentials.every(c=>c.encrypted_value.startsWith('v1.')&&!c.encrypted_value.includes('noiseKey')));
  first.ev.emit('creds.update',{registered:true,me:first.user});first.ev.emit('connection.update',{connection:'open'});
  await until(async()=>(await service.status(a.farm.id)).status==='connected','Connection not recorded');assert.equal((await service.status(a.farm.id)).phone_number,'+923001234567');assert.equal((await service.status(a.farm.id)).qr_data_url,null);
+ await assert.rejects(()=>service.sendReceipt(b.farm.id,'+923001234567','Wrong farm'),/disconnected/);
+ assert.equal(await service.sendReceipt(a.farm.id,'+923009876543','Receipt from farm A'),'mock-message');assert.deepEqual(sentMessages,[{socket:0,jid:'923009876543@s.whatsapp.net',text:'Receipt from farm A'}]);
+ await pool.query('UPDATE farms SET is_active=false WHERE id=$1',[a.farm.id]);await assert.rejects(()=>service.sendReceipt(a.farm.id,'+923009876543','Blocked'),/disconnected/);await pool.query('UPDATE farms SET is_active=true WHERE id=$1',[a.farm.id]);
  await first.auth.keys.set({'pre-key':{'1':{private:Buffer.alloc(32,1),public:Buffer.alloc(32,2)}}});const stored=await first.auth.keys.get('pre-key',['1']);assert.ok(Buffer.isBuffer(stored['1'].private));assert.equal(stored['1'].private[0],1);
  first.ev.emit('connection.update',{connection:'close',lastDisconnect:{error:{output:{statusCode:515}}}});
  await until(async()=>sockets.length===3,'Restart-required was not handled');assert.equal(sockets[2].auth.creds.registered,true);

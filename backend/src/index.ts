@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { db } from './db';
 import {operations,DomainError} from './modules/operations';
 import {appRouter} from './modules/app';
-import {whatsapp} from './modules/whatsapp';
+import {whatsapp,receiptDispatcher} from './modules/whatsapp';
 import {taskFollowups} from './modules/task-followups';
 import {adminRouter} from './modules/admin';
 import {addNotification} from './modules/notifications';
@@ -174,10 +174,11 @@ app.use((err:unknown,_req:Request,res:Response,_next:NextFunction)=>{
 if(!process.env.DATABASE_URL)console.warn('DATABASE_URL is missing. Configure PostgreSQL to enable accounts and farms.');
 const server=app.listen(Number(process.env.API_PORT)||4000,'0.0.0.0',()=>{
  console.log('DairyMonitor API ready');
+ receiptDispatcher.start();
  void whatsapp.restore().catch(()=>console.warn('WhatsApp connections could not be restored'));
 });
 for(const signal of ['SIGTERM','SIGINT'])process.once(signal,()=>{
  server.close();
  const timeout=setTimeout(()=>process.exit(0),8000);timeout.unref();
- void whatsapp.shutdown().finally(()=>db.end()).finally(()=>process.exit(0));
+ void receiptDispatcher.stop().finally(()=>whatsapp.shutdown()).finally(()=>db.end()).finally(()=>process.exit(0));
 });

@@ -1,3 +1,4 @@
+import {ReceiptDispatcher} from '../src/modules/pos-receipts';
 /** Run only against a disposable API/database: POS_TEST_API_URL, POS_TEST_ORIGIN, POS_TEST_DATABASE_URL. */
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
@@ -39,11 +40,35 @@ try{
  const retries=await Promise.all([raw(path+'/sales','POST',same),raw(path+'/sales','POST',same)]);assert.deepEqual(retries.map(r=>r.status).sort(),[200,201]);assert.equal(await stock(retryProduct.id),'4.000');
  const buyer=await call('/farms/'+farm.id+'/records/buyers','POST',{name:'Named customer'},201);
  const transfer=await call(path+'/sales','POST',{...payload(butter.id,'1','200'),buyer_id:buyer.id,payment_method:'Online transfer',payment_reference:'BANK-123'},201);assert.equal(transfer.customer_name,'Named customer');assert.equal(transfer.payment_method,'Online transfer');assert.equal(transfer.amount_received,'200.00');assert.equal(transfer.change_due,'0.00');
+ const discountProduct=await create('Discount milk','20','200');
+ const discounted={...payload(discountProduct.id,'1.5','200'),discount_type:'percent',discount_value:'10',customer_name:'Ali',customer_whatsapp:'0300 1234567',amount_received:'500'};
+ const discountSale=await call(path+'/sales','POST',discounted,201);
+ assert.equal(discountSale.subtotal,'300.00');assert.equal(discountSale.discount_amount,'30.00');assert.equal(discountSale.total,'270.00');assert.equal(discountSale.change_due,'230.00');assert.equal(discountSale.customer_whatsapp,'+923001234567');assert.equal(discountSale.whatsapp_status,'pending');
+ assert.equal((await call(path+'/sales','POST',discounted)).id,discountSale.id);
+ assert.equal((await db.query('SELECT count(*)::int AS count FROM pos_receipt_messages WHERE sale_id=$1',[discountSale.id])).rows[0].count,1);
+ assert.deepEqual(await call(path+'/contacts'),[{name:'Ali',whatsapp:'+923001234567'}]);
+ const netJournal=(await db.query('SELECT sum(debit)::text AS debit,sum(credit)::text AS credit FROM journal_entries WHERE reference=$1',[discountSale.receipt_number])).rows[0];assert.equal(netJournal.debit,'270.00');assert.equal(netJournal.credit,'270.00');
+ const fixed=await call(path+'/sales','POST',{...payload(discountProduct.id,'1','200'),discount_type:'amount',discount_value:'25.50'},201);assert.equal(fixed.total,'174.50');
+ const queuePool=new pg.Pool({connectionString:url});let connected=false;const sent:{farm:string;phone:string;text:string}[]=[];
+ const transport={readyToSend:async(id:string)=>connected&&id===farm.id,sendReceipt:async(farm:string,phone:string,text:string)=>{sent.push({farm,phone,text});return 'test-message-id'}};
+ const dispatcher=new ReceiptDispatcher(queuePool,transport),secondDispatcher=new ReceiptDispatcher(queuePool,transport);
+ try{
+  await dispatcher.drain();assert.equal(sent.length,0);connected=true;
+  await Promise.all([dispatcher.drain(),secondDispatcher.drain()]);assert.equal(sent.length,1);assert.equal(sent[0].phone,'+923001234567');assert.ok(sent[0].text.includes('Total paid: PKR 270.00'));assert.ok(sent[0].text.includes('Thank you for shopping with POS Test Farm!'));
+  await dispatcher.drain();assert.equal(sent.length,1);assert.equal((await call(path+'/sales/'+discountSale.id)).whatsapp_status,'sent');
+  await db.query("INSERT INTO pos_receipt_messages(farm_id,sale_id,recipient,body) VALUES($1,$2,'+923001234567','Test receipt')",[farm.id,fixed.id]);
+  let attempts=0;const failing=new ReceiptDispatcher(queuePool,{readyToSend:transport.readyToSend,sendReceipt:async()=>{attempts++;throw Error('Network failed after send')}});
+  await failing.drain();await failing.drain();assert.equal(attempts,1);assert.equal((await call(path+'/sales/'+fixed.id)).whatsapp_status,'unknown');await failing.stop();
+ }finally{await dispatcher.stop();await secondDispatcher.stop();await queuePool.end()}
+ const rollbackStock=await stock(discountProduct.id);
+ for(const fields of [{discount_value:'101'},{discount_value:'-1'},{discount_value:'1.001'},{discount_type:'amount',discount_value:'200'},{customer_whatsapp:'bad-phone'},{customer_whatsapp:'123@s.whatsapp.net'},{discount_value:'10',amount_received:'179.99'}])await call(path+'/sales','POST',{...payload(discountProduct.id,'1','200'),...fields},400);
+ assert.equal(await stock(discountProduct.id),rollbackStock);
+ const rounding=await create('Rounding','1','0.05');const rounded=await call(path+'/sales','POST',{...payload(rounding.id,'1','0.05'),discount_value:'10'},201);assert.equal(rounded.discount_amount,'0.01');assert.equal(rounded.total,'0.04');
  const other=await signup('Other farm owner');cookie=other.cookie;const otherFarm=await call('/farms','POST',{name:'Other POS Farm',city:'Lahore',currency:'PKR'},201);const otherProduct=await call('/farms/'+otherFarm.id+'/pos/products','POST',{name:'Other milk',unit:'litre',selling_price:'10',opening_stock:'1'},201);
- await call(path+'/products','GET',undefined,404);await call(path+'/sales/'+first.id,'GET',undefined,404);
+ await call(path+'/contacts','GET',undefined,404);await call(path+'/products','GET',undefined,404);await call(path+'/sales/'+first.id,'GET',undefined,404);
  cookie=owner.cookie;await call(path+'/sales','POST',payload(otherProduct.id,'1','10'),400);
  await call(path+'/sales','POST',{...payload(butter.id,'1','200'),buyer_id:other.user.id},400);
- await db.query("INSERT INTO farm_members(farm_id,user_id,role) VALUES($1,$2,'VIEWER')",[farm.id,other.user.id]);cookie=other.cookie;await call(path+'/products','GET',undefined,403);await call(path+'/sales','POST',payload(butter.id,'1','200'),403);cookie=owner.cookie;
+ await db.query("INSERT INTO farm_members(farm_id,user_id,role) VALUES($1,$2,'VIEWER')",[farm.id,other.user.id]);cookie=other.cookie;await call(path+'/contacts','GET',undefined,403);await call(path+'/products','GET',undefined,403);await call(path+'/sales','POST',payload(butter.id,'1','200'),403);cookie=owner.cookie;
  product=(await call(path+'/products')).find((p:any)=>p.id===butter.id);await call(path+'/products/'+butter.id,'PUT',{selling_price:'200',sale_enabled:false,version:product.version});await call(path+'/sales','POST',payload(butter.id,'1','200'),400);
  await db.query('UPDATE farms SET is_active=false WHERE id=$1',[farm.id]);await call(path+'/sales','POST',payload(yogurt.id,'1','150'),403);
  console.log('PASS: POS defaults, fractional quantities, stock deduction, balanced sales journal, cash/change, transfer, customers, price snapshots, stale price rejection, duplicate retries, concurrent oversell prevention, all-or-nothing checkout, tenant isolation, owner authorization, disabled products, suspension.');

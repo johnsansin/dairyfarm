@@ -166,6 +166,21 @@ export class WhatsAppService {
    if(!allowed)await this.serial(entry.farm,()=>this.fail(entry,'Connection paused because farm or administrator access changed.'));
   }
  }
+ async readyToSend(farm:string){
+  const entry=this.entries.get(farm);if(!entry||!this.current(entry)||!entry.socket)return false;
+  return Boolean((await this.pool.query("SELECT 1 FROM whatsapp_connections w JOIN farms f ON f.id=w.farm_id JOIN users u ON u.id=w.linked_by JOIN farm_members m ON m.farm_id=w.farm_id AND m.user_id=w.linked_by WHERE w.farm_id=$1 AND w.generation=$2 AND w.status='connected' AND w.enabled=true AND f.is_active=true AND u.is_active=true AND m.status='Active' AND m.role='OWNER'",[farm,entry.generation])).rowCount);
+ }
+ async sendReceipt(farm:string,phone:string,text:string){
+  if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new Error('Invalid WhatsApp recipient');
+  if(!await this.readyToSend(farm))throw new Error('WhatsApp is disconnected');
+  const socket=this.entries.get(farm)!.socket!;
+  const recipients=await socket.onWhatsApp(phone.slice(1));
+  const recipient=recipients?.find(value=>value.exists);
+  if(!recipient)throw new Error('Recipient is not on WhatsApp');
+  const message=await socket.sendMessage(recipient.jid,{text});
+  if(!message?.key.id)throw new Error('WhatsApp did not confirm message submission');
+  return message.key.id;
+ }
  async shutdown(){
   this.stopping=true;clearInterval(this.monitor);
   for(const entry of this.entries.values()){entry.stopped=true;this.stopSocket(entry);await entry.auth.flush()}

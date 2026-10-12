@@ -10,9 +10,7 @@ Only an active owner of that farm can view the QR or link/unlink the account;
 delegated settings permissions do not grant access to WhatsApp credentials.
 A farm has one linked number at a time. Unlink before changing numbers.
 
-This feature establishes and maintains the connection. It does not send messages,
-sync chat history into application records, or enable automated replies. There
-are no message-sending endpoints in this change.
+POS sales with a customer WhatsApp number now queue an itemized receipt from the farm’s linked account, including discounts and a thank-you message. See [POS receipts](pos-receipts.md). Chat history is not imported, and automated chat replies are not enabled.
 
 ## Operation
 

@@ -4,6 +4,8 @@ import {z} from 'zod';
 import type {PoolClient} from 'pg';
 import {db} from '../db';
 import {DomainError} from './operations';
+import {normalizeWhatsApp,receiptMessage} from './pos-receipts';
+import {receiptDispatcher} from './whatsapp';
 import {stockChange} from './stock';
 
 export const posRouter=Router({mergeParams:true});
@@ -12,18 +14,20 @@ posRouter.use((_req,res,next)=>{if(res.locals.farm.role!=='OWNER')throw new Doma
 const decimal=(scale:number,max:number,positive=false)=>z.union([z.number(),z.string()]).transform(String).refine(v=>new RegExp('^\\d+(\\.\\d{1,'+scale+'})?$').test(v)&&Number(v)<=max&&(positive?Number(v)>0:Number(v)>=0),'Enter a valid amount with at most '+scale+' decimal places');
 const money=decimal(2,999999999),quantity=decimal(3,999999);
 const productInput=z.object({name:z.string().trim().min(1).max(200),unit:z.enum(['litre','kg','cup','pack','piece']),selling_price:money,opening_stock:quantity.default('0'),unit_cost:decimal(6,999999999).default('0')}).strict();
-const checkoutInput=z.object({request_id:z.uuid(),buyer_id:z.uuid().nullable().default(null),payment_method:z.enum(['Cash','Online transfer']).default('Cash'),payment_reference:z.string().trim().max(100).default(''),amount_received:money.optional(),items:z.array(z.object({item_id:z.uuid(),quantity:decimal(3,999999,true),unit_price:money}).strict()).min(1).max(100).refine(items=>new Set(items.map(i=>i.item_id)).size===items.length,'Combine duplicate products into one line')}).strict();
+const checkoutInput=z.object({request_id:z.uuid(),buyer_id:z.uuid().nullable().default(null),customer_name:z.string().trim().max(200).default(''),customer_whatsapp:z.string().max(40).default('').transform(normalizeWhatsApp).refine(v=>v===''||/^\+[1-9]\d{7,14}$/.test(v),'Enter a WhatsApp number with country code, for example +923001234567'),discount_type:z.enum(['percent','amount']).default('percent'),discount_value:money.default('0'),payment_method:z.enum(['Cash','Online transfer']).default('Cash'),payment_reference:z.string().trim().max(100).default(''),amount_received:money.optional(),items:z.array(z.object({item_id:z.uuid(),quantity:decimal(3,999999,true),unit_price:money}).strict()).min(1).max(100).refine(items=>new Set(items.map(i=>i.item_id)).size===items.length,'Combine duplicate products into one line')}).strict();
 const cents=(value:string)=>{const [whole,fraction='']=value.split('.');return BigInt(whole)*100n+BigInt(fraction.padEnd(2,'0'))};
 const amount=(value:bigint)=>(value/100n)+'.'+String(value%100n).padStart(2,'0');
 async function receipt(client:Pick<PoolClient,'query'>,farm:string,id:string){
  const sale=(await client.query('SELECT * FROM pos_sales WHERE farm_id=$1 AND id=$2',[farm,id])).rows[0];
  if(!sale)throw new DomainError(404,'Receipt not found');
  const {request_hash,request_id,...safe}=sale;
- return {...safe,items:(await client.query('SELECT item_id,name,unit,quantity,unit_price,total FROM pos_sale_items WHERE farm_id=$1 AND sale_id=$2 ORDER BY position',[farm,id])).rows};
+ const message=(await client.query('SELECT status,last_error FROM pos_receipt_messages WHERE farm_id=$1 AND sale_id=$2',[farm,id])).rows[0];
+ return {...safe,whatsapp_status:message?.status||'not_requested',whatsapp_error:message?.last_error||null,items:(await client.query('SELECT item_id,name,unit,quantity,unit_price,total FROM pos_sale_items WHERE farm_id=$1 AND sale_id=$2 ORDER BY position',[farm,id])).rows};
 }
 async function audit(client:PoolClient,farm:string,user:string,action:string,id:string,value:unknown){await client.query('INSERT INTO audit_logs(id,farm_id,user_id,action,record_id,new_value) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),farm,user,action,id,JSON.stringify(value)])}
 posRouter.get('/products',async(_req,res)=>{res.json((await db.query('SELECT id,name,category,unit,stock_quantity,selling_price,sale_enabled,version FROM inventory WHERE farm_id=$1 ORDER BY name,id',[res.locals.farm.id])).rows)});
 posRouter.get('/customers',async(_req,res)=>{res.json((await db.query('SELECT id,name FROM buyers WHERE farm_id=$1 ORDER BY name,id',[res.locals.farm.id])).rows)});
+posRouter.get('/contacts',async(_req,res)=>{res.json((await db.query('SELECT name,whatsapp FROM pos_contacts WHERE farm_id=$1 ORDER BY updated_at DESC LIMIT 500',[res.locals.farm.id])).rows)});
 posRouter.post('/products',async(req,res)=>{
  const input=productInput.parse(req.body),farm=res.locals.farm.id,user=res.locals.user.id,id=randomUUID(),client=await db.connect();
  try{await client.query('BEGIN');
@@ -44,7 +48,9 @@ posRouter.get('/sales',async(_req,res)=>{res.json((await db.query('SELECT id,rec
 posRouter.get('/sales/:id',async(req,res)=>{res.json(await receipt(db,res.locals.farm.id,z.uuid().parse(req.params.id)))});
 posRouter.post('/sales',async(req,res)=>{
  const input=checkoutInput.parse(req.body),farm=res.locals.farm.id,user=res.locals.user.id,client=await db.connect();
- const hash=createHash('sha256').update(JSON.stringify(input)).digest('hex');
+ const {customer_name,customer_whatsapp,discount_type,discount_value,...legacyInput}=input;
+ const hashInput=!customer_name&&!customer_whatsapp&&discount_type==='percent'&&Number(discount_value)===0?legacyInput:input;
+ const hash=createHash('sha256').update(JSON.stringify(hashInput)).digest('hex');
  try{await client.query('BEGIN');
  // Serialize retries for the same checkout before checking its result.
  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[farm+':'+input.request_id]);
@@ -52,7 +58,7 @@ posRouter.post('/sales',async(req,res)=>{
  if(existing){if(existing.request_hash!==hash)throw new DomainError(409,'This checkout reference has already been used');const saved=await receipt(client,farm,existing.id);await client.query('COMMIT');res.json(saved);return}
  const farmRow=(await client.query('SELECT name,address,phone,currency,is_active FROM farms WHERE id=$1 FOR SHARE',[farm])).rows[0];
  if(!farmRow?.is_active)throw new DomainError(403,'This farm is suspended');
- let customer='Walk-in customer';if(input.buyer_id){const buyer=(await client.query('SELECT name FROM buyers WHERE farm_id=$1 AND id=$2 FOR SHARE',[farm,input.buyer_id])).rows[0];if(!buyer)throw new DomainError(400,'Customer does not belong to this farm');customer=buyer.name}
+ let customer=input.customer_name||'Walk-in customer';if(input.buyer_id){const buyer=(await client.query('SELECT name FROM buyers WHERE farm_id=$1 AND id=$2 FOR SHARE',[farm,input.buyer_id])).rows[0];if(!buyer)throw new DomainError(400,'Customer does not belong to this farm');customer=input.customer_name||buyer.name}
  // Lock in a stable order so simultaneous tills cannot oversell or deadlock.
  const products=(await client.query('SELECT * FROM inventory WHERE farm_id=$1 AND id=ANY($2::uuid[]) ORDER BY id FOR UPDATE',[farm,input.items.map(i=>i.item_id)])).rows;
  const lines: {item_id:string;name:string;unit:string;quantity:string;unit_price:string;total:string}[]=[];let total=0n;
@@ -65,10 +71,16 @@ posRouter.post('/sales',async(req,res)=>{
  total+=cents(value);lines.push({item_id:item.item_id,name:product.name,unit:product.unit,quantity:item.quantity,unit_price:product.selling_price,total:value});
  }
  if(total<=0n||total>99999999900n)throw new DomainError(400,'Sale total must be between 0.01 and 999999999');
+ const subtotal=total,discountValue=cents(input.discount_value);
+ if(input.discount_type==='percent'&&discountValue>10000n)throw new DomainError(400,'Discount percentage cannot exceed 100');
+ const discount=input.discount_type==='percent'?(subtotal*discountValue+5000n)/10000n:discountValue;
+ if(discount>=subtotal)throw new DomainError(400,'Discount must be less than the subtotal');
+ total=subtotal-discount;
  const received=input.payment_method==='Cash'?cents(input.amount_received??amount(total)):total;
  if(received<total)throw new DomainError(400,'Cash received is less than the sale total');
  const id=randomUUID(),number='POS-'+id.toUpperCase(),date=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Karachi'});
- await client.query('INSERT INTO pos_sales(id,farm_id,request_id,request_hash,receipt_number,buyer_id,customer_name,farm_name,farm_address,farm_phone,currency,payment_method,payment_reference,total,amount_received,change_due,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)',[id,farm,input.request_id,hash,number,input.buyer_id,customer,farmRow.name,farmRow.address,farmRow.phone,farmRow.currency,input.payment_method,input.payment_reference,amount(total),amount(received),amount(received-total),user]);
+ await client.query('INSERT INTO pos_sales(id,farm_id,request_id,request_hash,receipt_number,buyer_id,customer_name,farm_name,farm_address,farm_phone,currency,payment_method,payment_reference,total,amount_received,change_due,user_id,subtotal,discount_type,discount_value,discount_amount,customer_whatsapp) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)',[id,farm,input.request_id,hash,number,input.buyer_id,customer,farmRow.name,farmRow.address,farmRow.phone,farmRow.currency,input.payment_method,input.payment_reference,amount(total),amount(received),amount(received-total),user,amount(subtotal),input.discount_type,input.discount_value,amount(discount),input.customer_whatsapp]);
+ if(input.customer_whatsapp)await client.query("INSERT INTO pos_contacts(farm_id,whatsapp,name) VALUES($1,$2,$3) ON CONFLICT(farm_id,whatsapp) DO UPDATE SET name=CASE WHEN excluded.name<>'' THEN excluded.name ELSE pos_contacts.name END,updated_at=now()",[farm,input.customer_whatsapp,customer==='Walk-in customer'?'':customer]);
  for(const [index,line] of lines.entries())await client.query('INSERT INTO pos_sale_items(id,farm_id,sale_id,item_id,position,name,unit,quantity,unit_price,total) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[randomUUID(),farm,id,line.item_id,index,line.name,line.unit,line.quantity,line.unit_price,line.total]);
  for(const line of [...lines].sort((a,b)=>a.item_id.localeCompare(b.item_id)))await stockChange(client,farm,user,line.item_id,'-'+line.quantity,date,'POS sale '+number,'0','pos_sale',id);
  const accounts=[{code:'POS-SALES',name:'Point of sale revenue',type:'Income',category:'Sales'},{code:input.payment_method==='Cash'?'POS-CASH':'POS-BANK',name:input.payment_method==='Cash'?'POS cash':'POS bank transfers',type:'Asset',category:'Cash'}];
@@ -79,6 +91,8 @@ posRouter.post('/sales',async(req,res)=>{
  await client.query("INSERT INTO journal_entries(id,farm_id,account_id,entry_date,entry_type,description,debit,credit,reference) VALUES($1,$2,$3,$4,'General',$5,$6,$7,$8)",[randomUUID(),farm,saved.id,date,'POS sale '+number,index===1?amount(total):'0',index===0?amount(total):'0',number]);
  }
  await audit(client,farm,user,'pos.sale.created',id,{receipt_number:number,total:amount(total),payment_method:input.payment_method});
- const result=await receipt(client,farm,id);await client.query('COMMIT');res.status(201).json(result);
+ const result=await receipt(client,farm,id);
+ if(input.customer_whatsapp){await client.query('INSERT INTO pos_receipt_messages(farm_id,sale_id,recipient,body) VALUES($1,$2,$3,$4)',[farm,id,input.customer_whatsapp,receiptMessage(result)]);result.whatsapp_status='pending'}
+ await client.query('COMMIT');res.status(201).json(result);void receiptDispatcher.drain().catch(()=>{});
  }catch(e){await client.query('ROLLBACK');throw e}finally{client.release()}
 });
